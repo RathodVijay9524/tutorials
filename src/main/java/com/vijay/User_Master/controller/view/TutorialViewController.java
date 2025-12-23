@@ -93,5 +93,16 @@ public class TutorialViewController {
         model.addAttribute("title", "My Profile");
         return "tutorials/profile";
     }
+
+    @GetMapping("/search")
+    public String search(@RequestParam("q") String query,
+                        @RequestParam(defaultValue = "0") int page,
+                        Model model) {
+        Page<TutorialDTO> results = tutorialService.searchTutorials(query, page, 10);
+        model.addAttribute("tutorials", results);
+        model.addAttribute("query", query);
+        model.addAttribute("title", "Search Results: " + query);
+        return "tutorials/search";
+    }
 }
 

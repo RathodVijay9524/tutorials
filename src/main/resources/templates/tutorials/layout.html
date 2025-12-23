@@ -142,6 +142,18 @@
                         <a class="nav-link" th:href="@{/tutorials/playground}">Playground</a>
                     </li>
                 </ul>
+
+                <!-- Search Bar -->
+                <form class="d-none d-lg-flex mx-auto me-3" th:action="@{/tutorials/search}" method="GET"
+                    style="max-width: 400px; width: 100%;">
+                    <div class="input-group glass-effect rounded-pill overflow-hidden border-white border-opacity-10">
+                        <span class="input-group-text bg-transparent border-0 text-muted ps-3">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input name="q" class="form-control bg-transparent border-0 text-light shadow-none"
+                            type="search" placeholder="Search tutorials..." aria-label="Search">
+                    </div>
+                </form>
                 <div class="d-flex align-items-center">
                     <div sec:authorize="isAuthenticated()" class="d-flex align-items-center">
                         <a th:href="@{/tutorials/profile}" class="nav-link me-2" title="My Profile & Badges">
