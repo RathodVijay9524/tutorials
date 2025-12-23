@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{tutorials/layout}">
+
+<head>
+    <title th:text="${tutorial.title} + ' - JavaMaster'">Tutorial Viewer</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/tutorials}"
+                        class="text-primary text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/tutorials/category/{slug}(slug=${tutorial.slug})}"
+                        class="text-primary text-decoration-none" th:text="${tutorial.categoryName}">Category</a></li>
+                <li class="breadcrumb-item active text-light" aria-current="page" th:text="${tutorial.title}">Tutorial
+                </li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Left: Tutorial Content -->
+            <div class="col-lg-7">
+                <div class="premium-card p-4 p-md-5 mb-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h1 class="display-5 fw-bold mb-0" th:text="${tutorial.title}">Tutorial Title</h1>
+                        <button id="bookmark-btn" class="btn btn-outline-light btn-sm rounded-circle p-2"
+                            th:data-tutorial-id="${tutorial.id}" th:data-bookmarked="${isBookmarked}"
+                            title="Bookmark this tutorial">
+                            <i th:class="${isBookmarked ? 'fas fa-bookmark text-warning' : 'far fa-bookmark'}"></i>
+                        </button>
+                    </div>
+
+                    <!-- Star Rating Section -->
+                    <div class="d-flex align-items-center mb-3" id="rating-section">
+                        <div class="star-rating me-3" id="star-container">
+                            <i class="far fa-star rating-star" data-value="1"></i>
+                            <i class="far fa-star rating-star" data-value="2"></i>
+                            <i class="far fa-star rating-star" data-value="3"></i>
+                            <i class="far fa-star rating-star" data-value="4"></i>
+                            <i class="far fa-star rating-star" data-value="5"></i>
+                        </div>
+                        <span id="rating-summary" class="text-muted small">
+                            Loading ratings...
+                        </span>
+                    </div>
+
+                    <div class="d-flex gap-3 mb-4 text-muted small border-bottom border-white border-opacity-10 pb-3">
+                        <span><i class="far fa-user me-1"></i> <span
+                                th:text="${tutorial.authorName}">Author</span></span>
+                        <span><i class="far fa-clock me-1"></i> <span
+                                th:text="${tutorial.estimatedMinutes + ' min read'}">10 min read</span></span>
+                        <span><i class="far fa-calendar-alt me-1"></i> <span
+                                th:text="${#temporals.format(tutorial.updatedAt, 'dd MMM yyyy')}">Date</span></span>
+                        <span><i class="far fa-eye me-1"></i> <span th:text="${tutorial.viewCount + ' views'}">0
+                                views</span></span>
+                    </div>
+
+                    <div id="tutorial-content" class="markdown-body" th:text="${tutorial.content}">
+                        Tutorial content goes here...
+                    </div>
+
+                    <div class="mt-5 d-flex justify-content-between border-top border-white border-opacity-10 pt-4">
+                        <button class="btn btn-outline-light"><i class="fas fa-chevron-left me-2"></i> Previous</button>
+                        <button class="btn btn-premium">Complete & Continue <i
+                                class="fas fa-chevron-right ms-2"></i></button>
+                    </div>
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="premium-card p-4 mb-4">
+                    <h4 class="mb-4"><i class="fas fa-comments me-2"></i>Reviews</h4>
+                    <div id="reviews-container">
+                        <p class="text-muted">Loading reviews...</p>
+                    </div>
+
+                    <!-- Write Review Form -->
+                    <div id="review-form" class="mt-4 pt-4 border-top border-white border-opacity-10"
+                        style="display: none;">
+                        <h5 class="mb-3">Write a Review</h5>
+                        <textarea id="review-text" class="form-control bg-dark text-light mb-3" rows="3"
+                            placeholder="Share your thoughts about this tutorial..."></textarea>
+                        <button id="submit-review-btn" class="btn btn-primary">Submit Review</button>
+                    </div>
+                </div>
+
+                <!-- Quiz Section -->
+                <div class="premium-card p-4 mb-4" id="quiz-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="mb-0"><i class="fas fa-question-circle me-2"></i>Knowledge Check</h4>
+                        <span id="quiz-status" class="badge bg-secondary">Loading...</span>
+                    </div>
+
+                    <div id="quiz-intro">
+                        <p class="text-muted">Test your understanding of this tutorial with a quick quiz.</p>
+                        <button id="start-quiz-btn" class="btn btn-premium" disabled>
+                            <i class="fas fa-play me-2"></i>Take Quiz
+                        </button>
+                        <div id="quiz-history" class="mt-3"></div>
+                    </div>
+
+                    <div id="quiz-container" style="display: none;">
+                        <div id="quiz-progress" class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span id="question-counter" class="small">Question 1 of 5</span>
+                                <span id="quiz-timer" class="small text-muted"></span>
+                            </div>
+                            <div class="progress" style="height: 4px;">
+                                <div id="quiz-progress-bar" class="progress-bar bg-primary" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div id="question-card" class="mb-4">
+                            <h5 id="question-text" class="mb-3"></h5>
+                            <pre id="question-code" class="d-none bg-dark p-3 rounded mb-3"></pre>
+                            <div id="options-container"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button id="prev-question-btn" class="btn btn-outline-light" disabled>
+                                <i class="fas fa-chevron-left me-1"></i> Previous
+                            </button>
+                            <button id="next-question-btn" class="btn btn-primary">
+                                Next <i class="fas fa-chevron-right ms-1"></i>
+                            </button>
+                            <button id="submit-quiz-btn" class="btn btn-success d-none">
+                                <i class="fas fa-check me-1"></i> Submit Quiz
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="quiz-result" style="display: none;">
+                        <div class="text-center py-4">
+                            <div id="result-icon" class="mb-3"></div>
+                            <h4 id="result-title" class="mb-2"></h4>
+                            <p id="result-score" class="lead mb-3"></p>
+                            <div class="progress mb-4" style="height: 20px;">
+                                <div id="result-progress-bar" class="progress-bar"></div>
+                            </div>
+                            <button id="review-answers-btn" class="btn btn-outline-light me-2">
+                                <i class="fas fa-eye me-1"></i> Review Answers
+                            </button>
+                            <button id="retake-quiz-btn" class="btn btn-primary">
+                                <i class="fas fa-redo me-1"></i> Retake Quiz
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="quiz-review" style="display: none;">
+                        <h5 class="mb-3">Answer Review</h5>
+                        <div id="review-container"></div>
+                        <button id="back-to-result-btn" class="btn btn-outline-light mt-3">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Results
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Discussion Section -->
+                <div class="premium-card p-4 mb-4" id="discussion-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="mb-0"><i class="fas fa-comments me-2"></i>Discussion</h4>
+                        <span id="comment-count" class="badge bg-secondary">0 comments</span>
+                    </div>
+
+                    <!-- Add Comment Form (authenticated users only) -->
+                    <div sec:authorize="isAuthenticated()" class="mb-4">
+                        <div class="d-flex gap-3">
+                            <div class="flex-grow-1">
+                                <textarea id="new-comment-input" class="form-control bg-dark text-light" rows="2"
+                                    placeholder="Join the discussion..." style="resize: none;"></textarea>
+                            </div>
+                            <button id="post-comment-btn" class="btn btn-primary align-self-end">
+                                <i class="fas fa-paper-plane me-1"></i> Post
+                            </button>
+                        </div>
+                    </div>
+
+                    <div sec:authorize="isAnonymous()" class="text-center py-3 mb-3 glass-effect rounded">
+                        <p class="mb-2 text-muted">Login to join the discussion</p>
+                        <a th:href="@{/login}" class="btn btn-outline-primary btn-sm">Login</a>
+                    </div>
+
+                    <!-- Comments Container -->
+                    <div id="comments-container">
+                        <div class="text-center py-3">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span class="text-muted ms-2">Loading comments...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Interactive Code Block -->
+            <div class="col-lg-5">
+                <div class="premium-card sticky-top" style="top: 100px;">
+                    <div
+                        class="bg-dark p-2 d-flex justify-content-between align-items-center border-bottom border-white border-opacity-10">
+                        <span class="small fw-bold px-2"><i class="fab fa-java text-primary me-2"></i>Interactive
+                            Workbench</span>
+                        <div class="d-flex gap-2">
+                            <button id="run-btn" class="btn btn-success btn-sm"><i class="fas fa-play me-1"></i>
+                                Run</button>
+                            <button id="reset-btn" class="btn btn-outline-light btn-sm"><i
+                                    class="fas fa-undo"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Monaco Editor Container -->
+                    <div id="editor-container" style="height: 400px; width: 100%;"></div>
+
+                    <!-- Output Terminal -->
+                    <div class="bg-black text-light p-3 font-monospace"
+                        style="height: 200px; overflow-y: auto; font-size: 0.9rem;">
+                        <div
+                            class="d-flex justify-content-between mb-2 border-bottom border-white border-opacity-10 pb-1">
+                            <span class="text-muted small uppercase">Output Console</span>
+                            <span id="exec-status" class="small"></span>
+                        </div>
+                        <pre id="output-content" class="m-0 text-success">Click 'Run' to see output...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div layout:fragment="scripts">
+        <!-- Markdown Renderer -->
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <!-- Monaco Editor -->
+        <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs/loader.js"></script>
+
+        <script th:inline="javascript">
+            // Render Markdown
+            const contentEl = document.getElementById('tutorial-content');
+            const rawMarkdown = contentEl.textContent || contentEl.innerText;
+            contentEl.innerHTML = marked.parse(rawMarkdown);
+
+            // Initialize Monaco Editor
+            const defaultCode = [[${ tutorial.codeExample }]] || 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, Java!");\n    }\n}';
+
+            require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs' } });
+            require(['vs/editor/editor.main'], function () {
+                window.editor = monaco.editor.create(document.getElementById('editor-container'), {
+                    value: defaultCode,
+                    language: 'java',
+                    theme: 'vs-dark',
+                    fontSize: 14,
+                    automaticLayout: true,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    padding: { top: 10 }
+                });
+            });
+
+            // Handle Code Execution
+            document.getElementById('run-btn').addEventListener('click', async () => {
+                const code = window.editor.getValue();
+                const outputEl = document.getElementById('output-content');
+                const statusEl = document.getElementById('exec-status');
+
+                outputEl.textContent = "Running code...";
+                outputEl.className = "text-info";
+                statusEl.textContent = "Processing...";
+
+                try {
+                    const response = await fetch('/api/v1/code/execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: code, language: 'java' })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'SUCCESS') {
+                        outputEl.textContent = result.output || result.message;
+                        outputEl.className = "text-success";
+                        statusEl.textContent = "Done (" + result.executionTimeMs + "ms)";
+                    } else {
+                        outputEl.textContent = result.error || result.compileOutput || result.message;
+                        outputEl.className = "text-danger";
+                        statusEl.textContent = "Error";
+                    }
+                } catch (error) {
+                    outputEl.textContent = "Error: " + error.message;
+                    outputEl.className = "text-danger";
+                    statusEl.textContent = "Failed";
+                }
+            });
+
+            // Reset Code
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                window.editor.setValue(defaultCode);
+            });
+        </script>
+
+        <style>
+            .markdown-body h2 {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding-bottom: 0.5rem;
+                margin-top: 2rem;
+                margin-bottom: 1rem;
+            }
+
+            .markdown-body p {
+                line-height: 1.7;
+                color: var(--text-muted);
+            }
+
+            .markdown-body code:not(pre code) {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 0.2rem 0.4rem;
+                border-radius: 0.3rem;
+                color: var(--accent-color);
+            }
+
+            .markdown-body pre {
+                background: var(--dark-bg);
+                padding: 1rem;
+                border-radius: 0.5rem;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            /* Star Rating Styles */
+            .star-rating {
+                font-size: 1.5rem;
+            }
+
+            .rating-star {
+                color: #4a5568;
+                cursor: pointer;
+                transition: color 0.2s, transform 0.2s;
+            }
+
+            .rating-star:hover,
+            .rating-star.hovered {
+                color: #ffc107;
+                transform: scale(1.1);
+            }
+
+            .rating-star.filled {
+                color: #ffc107;
+            }
+
+            /* Review Card */
+            .review-card {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 0.5rem;
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .review-stars {
+                font-size: 0.9rem;
+            }
+
+            /* Quiz Styles */
+            .option-item {
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .option-item:hover {
+                background: rgba(0, 132, 255, 0.1) !important;
+                border-color: rgba(0, 132, 255, 0.3) !important;
+            }
+
+            .option-item.selected {
+                background: rgba(0, 132, 255, 0.2) !important;
+                border-color: var(--primary-color) !important;
+            }
+
+            .option-item input[type="radio"] {
+                cursor: pointer;
+            }
+
+            #quiz-section .btn-premium:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        </style>
+
+        <script th:inline="javascript">
+            const tutorialId = [[${ tutorial.id }]];
+
+            // ========== BOOKMARK FUNCTIONALITY ==========
+            const bookmarkBtn = document.getElementById('bookmark-btn');
+
+            bookmarkBtn.addEventListener('click', async function () {
+                try {
+                    const response = await fetch(`/api/v1/bookmarks/tutorial/${tutorialId}/toggle`, {
+                        method: 'POST'
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const icon = this.querySelector('i');
+
+                        if (data.isBookmarked) {
+                            icon.className = 'fas fa-bookmark text-warning';
+                            this.dataset.bookmarked = 'true';
+                        } else {
+                            icon.className = 'far fa-bookmark';
+                            this.dataset.bookmarked = 'false';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Bookmark error:', error);
+                    alert('Please login to bookmark tutorials');
+                }
+            });
+
+            // ========== RATING FUNCTIONALITY ==========
+            const stars = document.querySelectorAll('.rating-star');
+            const ratingSummary = document.getElementById('rating-summary');
+            let userRating = 0;
+
+            // Load rating summary
+            async function loadRatingSummary() {
+                try {
+                    const response = await fetch(`/api/v1/ratings/tutorial/${tutorialId}/summary`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        updateStarDisplay(data.averageRating);
+                        ratingSummary.textContent = `${data.averageRating.toFixed(1)} (${data.totalRatings} ratings)`;
+
+                        if (data.userHasRated) {
+                            userRating = data.userRating;
+                            document.getElementById('review-form').style.display = 'block';
+                        }
+                    }
+                } catch (error) {
+                    ratingSummary.textContent = 'Be the first to rate!';
+                }
+            }
+
+            function updateStarDisplay(rating) {
+                stars.forEach((star, index) => {
+                    if (index < Math.round(rating)) {
+                        star.classList.add('filled');
+                        star.classList.replace('far', 'fas');
+                    } else {
+                        star.classList.remove('filled');
+                        star.classList.replace('fas', 'far');
+                    }
+                });
+            }
+
+            // Star hover effect
+            stars.forEach(star => {
+                star.addEventListener('mouseenter', function () {
+                    const value = parseInt(this.dataset.value);
+                    stars.forEach((s, i) => {
+                        if (i < value) {
+                            s.classList.add('hovered');
+                        } else {
+                            s.classList.remove('hovered');
+                        }
+                    });
+                });
+
+                star.addEventListener('mouseleave', function () {
+                    stars.forEach(s => s.classList.remove('hovered'));
+                });
+
+                star.addEventListener('click', async function () {
+                    const rating = parseInt(this.dataset.value);
+                    try {
+                        const response = await fetch(`/api/v1/ratings/tutorial/${tutorialId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ rating: rating })
+                        });
+
+                        if (response.ok) {
+                            userRating = rating;
+                            loadRatingSummary();
+                            document.getElementById('review-form').style.display = 'block';
+                        }
+                    } catch (error) {
+                        alert('Please login to rate tutorials');
+                    }
+                });
+            });
+
+            // ========== REVIEWS FUNCTIONALITY ==========
+            const reviewsContainer = document.getElementById('reviews-container');
+
+            async function loadReviews() {
+                try {
+                    const response = await fetch(`/api/v1/ratings/tutorial/${tutorialId}/reviews`);
+                    if (response.ok) {
+                        const reviews = await response.json();
+                        if (reviews.length === 0) {
+                            reviewsContainer.innerHTML = '<p class="text-muted">No reviews yet. Be the first to share your thoughts!</p>';
+                        } else {
+                            reviewsContainer.innerHTML = reviews.map(r => `
+                                <div class="review-card">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <strong class="text-light">${r.username}</strong>
+                                            <div class="review-stars">
+                                                ${'<i class="fas fa-star text-warning"></i>'.repeat(r.rating)}
+                                                ${'<i class="far fa-star text-warning"></i>'.repeat(5 - r.rating)}
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">${new Date(r.createdAt).toLocaleDateString()}</small>
+                                    </div>
+                                    <p class="mb-0 text-muted">${r.review}</p>
+                                </div>
+                            `).join('');
+                        }
+                    }
+                } catch (error) {
+                    reviewsContainer.innerHTML = '<p class="text-muted">Unable to load reviews</p>';
+                }
+            }
+
+            // Submit review
+            document.getElementById('submit-review-btn').addEventListener('click', async function () {
+                const reviewText = document.getElementById('review-text').value.trim();
+                if (!reviewText) {
+                    alert('Please write a review before submitting');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/v1/ratings/tutorial/${tutorialId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rating: userRating || 5, review: reviewText })
+                    });
+
+                    if (response.ok) {
+                        document.getElementById('review-text').value = '';
+                        loadReviews();
+                        loadRatingSummary();
+                    }
+                } catch (error) {
+                    alert('Please login to submit a review');
+                }
+            });
+
+            // Initialize
+            loadRatingSummary();
+            loadReviews();
+
+            // ========== QUIZ FUNCTIONALITY ==========
+            let quizData = null;
+            let currentQuestionIndex = 0;
+            let userAnswers = {};
+            let attemptId = null;
+            let attemptResult = null;
+
+            const quizStatusEl = document.getElementById('quiz-status');
+            const startQuizBtn = document.getElementById('start-quiz-btn');
+            const quizIntro = document.getElementById('quiz-intro');
+            const quizContainer = document.getElementById('quiz-container');
+            const quizResult = document.getElementById('quiz-result');
+            const quizReview = document.getElementById('quiz-review');
+            const quizHistoryEl = document.getElementById('quiz-history');
+
+            // Load quiz for this tutorial
+            async function loadQuiz() {
+                try {
+                    const response = await fetch(`/api/v1/quizzes/tutorial/${tutorialId}`);
+                    if (response.ok) {
+                        quizData = await response.json();
+                        quizStatusEl.textContent = `${quizData.questionCount} Questions`;
+                        quizStatusEl.className = 'badge bg-primary';
+                        startQuizBtn.disabled = false;
+                        loadQuizHistory();
+                    } else if (response.status === 404) {
+                        quizStatusEl.textContent = 'No Quiz Available';
+                        quizStatusEl.className = 'badge bg-secondary';
+                        startQuizBtn.style.display = 'none';
+                    }
+                } catch (error) {
+                    quizStatusEl.textContent = 'Error Loading Quiz';
+                    quizStatusEl.className = 'badge bg-danger';
+                }
+            }
+
+            // Load user's quiz history
+            async function loadQuizHistory() {
+                try {
+                    const response = await fetch(`/api/v1/quizzes/${quizData.id}/best`);
+                    if (response.ok) {
+                        const best = await response.json();
+                        quizHistoryEl.innerHTML = `
+                            <div class="glass-effect p-3 rounded">
+                                <small class="text-muted">Your Best Score</small>
+                                <div class="d-flex align-items-center mt-1">
+                                    <span class="h4 mb-0 me-2 ${best.isPassed ? 'text-success' : 'text-warning'}">${Math.round(best.percentage)}%</span>
+                                    <span class="badge ${best.isPassed ? 'bg-success' : 'bg-warning'}">${best.isPassed ? 'Passed' : 'Not Passed'}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    // No history yet
+                }
+            }
+
+            // Start quiz
+            startQuizBtn.addEventListener('click', async function () {
+                try {
+                    const response = await fetch(`/api/v1/quizzes/${quizData.id}/start`, { method: 'POST' });
+                    if (response.ok) {
+                        const attempt = await response.json();
+                        attemptId = attempt.id;
+                        currentQuestionIndex = 0;
+                        userAnswers = {};
+                        showQuizContainer();
+                        renderQuestion();
+                    } else {
+                        alert('Please login to take the quiz');
+                    }
+                } catch (error) {
+                    alert('Error starting quiz');
+                }
+            });
+
+            function showQuizContainer() {
+                quizIntro.style.display = 'none';
+                quizContainer.style.display = 'block';
+                quizResult.style.display = 'none';
+                quizReview.style.display = 'none';
+            }
+
+            function renderQuestion() {
+                const question = quizData.questions[currentQuestionIndex];
+                const total = quizData.questions.length;
+
+                document.getElementById('question-counter').textContent = `Question ${currentQuestionIndex + 1} of ${total}`;
+                document.getElementById('quiz-progress-bar').style.width = `${((currentQuestionIndex + 1) / total) * 100}%`;
+                document.getElementById('question-text').textContent = question.questionText;
+
+                // Code snippet
+                const codeEl = document.getElementById('question-code');
+                if (question.codeSnippet) {
+                    codeEl.textContent = question.codeSnippet;
+                    codeEl.classList.remove('d-none');
+                } else {
+                    codeEl.classList.add('d-none');
+                }
+
+                // Options
+                const optionsContainer = document.getElementById('options-container');
+                optionsContainer.innerHTML = question.options.map(opt => `
+                    <div class="form-check glass-effect p-3 rounded mb-2 option-item ${userAnswers[question.id] === opt.id ? 'selected' : ''}"
+                         data-option-id="${opt.id}" data-question-id="${question.id}">
+                        <input class="form-check-input" type="radio" name="q${question.id}" id="opt${opt.id}" 
+                               value="${opt.id}" ${userAnswers[question.id] === opt.id ? 'checked' : ''}>
+                        <label class="form-check-label w-100" for="opt${opt.id}">${opt.optionText}</label>
+                    </div>
+                `).join('');
+
+                // Option click handlers
+                document.querySelectorAll('.option-item').forEach(item => {
+                    item.addEventListener('click', function () {
+                        const qId = parseInt(this.dataset.questionId);
+                        const oId = parseInt(this.dataset.optionId);
+                        userAnswers[qId] = oId;
+                        this.querySelector('input').checked = true;
+                        document.querySelectorAll('.option-item').forEach(i => i.classList.remove('selected'));
+                        this.classList.add('selected');
+                    });
+                });
+
+                // Navigation buttons
+                document.getElementById('prev-question-btn').disabled = currentQuestionIndex === 0;
+                if (currentQuestionIndex === total - 1) {
+                    document.getElementById('next-question-btn').classList.add('d-none');
+                    document.getElementById('submit-quiz-btn').classList.remove('d-none');
+                } else {
+                    document.getElementById('next-question-btn').classList.remove('d-none');
+                    document.getElementById('submit-quiz-btn').classList.add('d-none');
+                }
+            }
+
+            document.getElementById('prev-question-btn').addEventListener('click', function () {
+                if (currentQuestionIndex > 0) {
+                    currentQuestionIndex--;
+                    renderQuestion();
+                }
+            });
+
+            document.getElementById('next-question-btn').addEventListener('click', function () {
+                if (currentQuestionIndex < quizData.questions.length - 1) {
+                    currentQuestionIndex++;
+                    renderQuestion();
+                }
+            });
+
+            document.getElementById('submit-quiz-btn').addEventListener('click', async function () {
+                try {
+                    const response = await fetch(`/api/v1/quizzes/attempts/${attemptId}/submit`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userAnswers)
+                    });
+
+                    if (response.ok) {
+                        attemptResult = await response.json();
+                        showResult();
+                    }
+                } catch (error) {
+                    alert('Error submitting quiz');
+                }
+            });
+
+            function showResult() {
+                quizContainer.style.display = 'none';
+                quizResult.style.display = 'block';
+
+                const percentage = Math.round(attemptResult.percentage);
+                const isPassed = attemptResult.isPassed;
+
+                document.getElementById('result-icon').innerHTML = isPassed
+                    ? '<i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>'
+                    : '<i class="fas fa-times-circle text-danger" style="font-size: 4rem;"></i>';
+                document.getElementById('result-title').textContent = isPassed ? 'Congratulations!' : 'Keep Trying!';
+                document.getElementById('result-score').textContent = `You scored ${attemptResult.score}/${attemptResult.maxScore} (${percentage}%)`;
+
+                const progressBar = document.getElementById('result-progress-bar');
+                progressBar.style.width = `${percentage}%`;
+                progressBar.textContent = `${percentage}%`;
+                progressBar.className = `progress-bar ${isPassed ? 'bg-success' : 'bg-danger'}`;
+            }
+
+            document.getElementById('review-answers-btn').addEventListener('click', function () {
+                quizResult.style.display = 'none';
+                quizReview.style.display = 'block';
+
+                const reviewContainer = document.getElementById('review-container');
+                reviewContainer.innerHTML = attemptResult.responses.map((r, i) => `
+                    <div class="glass-effect p-3 rounded mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>Question ${i + 1}</strong>
+                            <span class="badge ${r.isCorrect ? 'bg-success' : 'bg-danger'}">${r.isCorrect ? 'Correct' : 'Incorrect'}</span>
+                        </div>
+                        <p class="mb-2">${r.questionText}</p>
+                        <div class="small">
+                            <div class="${r.isCorrect ? 'text-success' : 'text-danger'}">
+                                <i class="fas ${r.isCorrect ? 'fa-check' : 'fa-times'} me-1"></i>
+                                Your answer: ${r.selectedOptionText || 'Not answered'}
+                            </div>
+                            ${!r.isCorrect ? `<div class="text-success"><i class="fas fa-check me-1"></i>Correct answer: ${r.correctOptionText}</div>` : ''}
+                            ${r.explanation ? `<div class="text-muted mt-2"><i class="fas fa-info-circle me-1"></i>${r.explanation}</div>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            });
+
+            document.getElementById('back-to-result-btn').addEventListener('click', function () {
+                quizReview.style.display = 'none';
+                quizResult.style.display = 'block';
+            });
+
+            document.getElementById('retake-quiz-btn').addEventListener('click', function () {
+                quizResult.style.display = 'none';
+                quizIntro.style.display = 'block';
+                loadQuizHistory();
+            });
+
+            // Initialize quiz
+            loadQuiz();
+
+            // ============ COMMENTS FUNCTIONALITY ============
+            // Note: tutorialId is already defined above in quiz section
+            const commentsContainer = document.getElementById('comments-container');
+            const commentCountEl = document.getElementById('comment-count');
+            const newCommentInput = document.getElementById('new-comment-input');
+            const postCommentBtn = document.getElementById('post-comment-btn');
+
+            async function loadComments() {
+                try {
+                    const response = await fetch(`/api/v1/comments/tutorial/${tutorialId}`);
+                    if (!response.ok) throw new Error('Failed to load comments');
+
+                    const comments = await response.json();
+                    renderComments(comments);
+
+                    // Update count
+                    const totalCount = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
+                    commentCountEl.textContent = `${totalCount} comment${totalCount !== 1 ? 's' : ''}`;
+                } catch (error) {
+                    console.error('Error loading comments:', error);
+                    commentsContainer.innerHTML = '<p class="text-muted">Failed to load comments.</p>';
+                }
+            }
+
+            function renderComments(comments) {
+                if (comments.length === 0) {
+                    commentsContainer.innerHTML = '<p class="text-muted text-center py-3">No comments yet. Be the first to share your thoughts!</p>';
+                    return;
+                }
+
+                commentsContainer.innerHTML = comments.map(comment => renderComment(comment)).join('');
+            }
+
+            function renderComment(comment, isReply = false) {
+                const repliesHtml = comment.replies ? comment.replies.map(r => renderComment(r, true)).join('') : '';
+                const marginClass = isReply ? 'ms-4 mt-3' : 'mb-4';
+
+                return `
+                    <div class="comment ${marginClass}" data-comment-id="${comment.id}">
+                        <div class="d-flex gap-3">
+                            <div class="comment-avatar">
+                                <i class="fas fa-user-circle fa-2x text-muted"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <div>
+                                        <strong class="text-light">${comment.authorUsername}</strong>
+                                        <span class="text-muted small ms-2">${comment.createdAt}</span>
+                                        ${comment.isEdited ? '<span class="badge bg-secondary small ms-1">edited</span>' : ''}
+                                    </div>
+                                    ${comment.isOwner ? `
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-sm text-muted p-0" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-h"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
+                                                <li><a class="dropdown-item edit-comment-btn" href="#" data-id="${comment.id}">
+                                                    <i class="fas fa-edit me-2"></i>Edit</a></li>
+                                                <li><a class="dropdown-item delete-comment-btn text-danger" href="#" data-id="${comment.id}">
+                                                    <i class="fas fa-trash me-2"></i>Delete</a></li>
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <p class="comment-content mb-2">${comment.content}</p>
+                                ${!isReply ? `
+                                    <button class="btn btn-link btn-sm text-muted p-0 reply-btn" data-id="${comment.id}">
+                                        <i class="fas fa-reply me-1"></i>Reply
+                                    </button>
+                                ` : ''}
+                                <div class="reply-form mt-2" style="display: none;" data-parent-id="${comment.id}">
+                                    <div class="d-flex gap-2">
+                                        <input type="text" class="form-control form-control-sm bg-dark text-light reply-input" placeholder="Write a reply...">
+                                        <button class="btn btn-primary btn-sm submit-reply-btn" data-parent-id="${comment.id}">Reply</button>
+                                    </div>
+                                </div>
+                                ${repliesHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Post new comment
+            if (postCommentBtn) {
+                postCommentBtn.addEventListener('click', async function () {
+                    const content = newCommentInput.value.trim();
+                    if (!content) return;
+
+                    try {
+                        const response = await fetch(`/api/v1/comments/tutorial/${tutorialId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ content })
+                        });
+
+                        if (response.ok) {
+                            newCommentInput.value = '';
+                            loadComments();
+                        } else {
+                            alert('Failed to post comment');
+                        }
+                    } catch (error) {
+                        console.error('Error posting comment:', error);
+                    }
+                });
+            }
+
+            // Event delegation for dynamic elements
+            commentsContainer.addEventListener('click', async function (e) {
+                // Reply button
+                if (e.target.closest('.reply-btn')) {
+                    const btn = e.target.closest('.reply-btn');
+                    const commentId = btn.dataset.id;
+                    const replyForm = btn.parentElement.querySelector('.reply-form');
+                    replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+                }
+
+                // Submit reply
+                if (e.target.closest('.submit-reply-btn')) {
+                    const btn = e.target.closest('.submit-reply-btn');
+                    const parentId = btn.dataset.parentId;
+                    const input = btn.parentElement.querySelector('.reply-input');
+                    const content = input.value.trim();
+
+                    if (!content) return;
+
+                    try {
+                        const response = await fetch(`/api/v1/comments/tutorial/${tutorialId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ content, parentId })
+                        });
+
+                        if (response.ok) {
+                            loadComments();
+                        }
+                    } catch (error) {
+                        console.error('Error posting reply:', error);
+                    }
+                }
+
+                // Delete comment
+                if (e.target.closest('.delete-comment-btn')) {
+                    e.preventDefault();
+                    const btn = e.target.closest('.delete-comment-btn');
+                    const commentId = btn.dataset.id;
+
+                    if (confirm('Delete this comment?')) {
+                        try {
+                            const response = await fetch(`/api/v1/comments/${commentId}`, { method: 'DELETE' });
+                            if (response.ok) loadComments();
+                        } catch (error) {
+                            console.error('Error deleting comment:', error);
+                        }
+                    }
+                }
+            });
+
+            // Load comments on page load
+            loadComments();
+        </script>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{tutorials/layout}">
+
+<head>
+    <title>Java Playground - JavaMaster</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="mb-4">
+            <h1 class="display-5 fw-bold"><i class="fas fa-flask text-primary me-3"></i>Java Workbench</h1>
+            <p class="text-muted">A secure sandbox to write, compile, and execute Java code in the browser.</p>
+        </div>
+
+        <div class="premium-card p-0 overflow-hidden">
+            <div
+                class="bg-dark p-3 d-flex justify-content-between align-items-center border-bottom border-white border-opacity-10">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-primary">Java 25</span>
+                    <input type="text" class="form-control form-control-sm bg-transparent border-0 text-light"
+                        style="width: 200px;" value="Main.java">
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="run-btn" class="btn btn-premium px-4"><i class="fas fa-play me-2"></i> Run Code</button>
+                    <button id="clear-btn" class="btn btn-outline-light btn-sm"><i class="fas fa-trash-alt me-1"></i>
+                        Clear</button>
+                </div>
+            </div>
+
+            <div class="row g-0">
+                <div class="col-lg-8 border-end border-white border-opacity-10">
+                    <div id="editor-container" style="height: 600px; width: 100%;"></div>
+                </div>
+                <div class="col-lg-4 bg-black">
+                    <div class="p-3 d-flex flex-column h-100">
+                        <div
+                            class="d-flex justify-content-between mb-3 border-bottom border-white border-opacity-10 pb-2">
+                            <span class="small fw-bold text-muted uppercase">Console Output</span>
+                            <span id="exec-status" class="small badge bg-dark">Ready</span>
+                        </div>
+                        <pre id="output-content" class="text-success font-monospace m-0 flex-grow-1"
+                            style="white-space: pre-wrap; font-size: 0.9rem;">The output of your code will appear here...</pre>
+
+                        <div class="mt-4 pt-3 border-top border-white border-opacity-10">
+                            <p class="small text-muted mb-2">Metrics</p>
+                            <div class="row g-2 text-center">
+                                <div class="col-6">
+                                    <div class="p-2 glass-effect rounded">
+                                        <div id="metric-time" class="h6 mb-0">--</div>
+                                        <div class="small text-muted">Time</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 glass-effect rounded">
+                                        <div id="metric-memory" class="h6 mb-0">--</div>
+                                        <div class="small text-muted">Memory</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div layout:fragment="scripts">
+        <!-- Monaco Editor -->
+        <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs/loader.js"></script>
+
+        <script>
+            const defaultCode = 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, Java Playground!");\n        \n        // Try writing some Java code here\n        for(int i = 1; i <= 5; i++) {\n            System.out.println("Line " + i);\n        }\n    }\n}';
+
+            require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs' } });
+            require(['vs/editor/editor.main'], function () {
+                window.editor = monaco.editor.create(document.getElementById('editor-container'), {
+                    value: defaultCode,
+                    language: 'java',
+                    theme: 'vs-dark',
+                    fontSize: 16,
+                    automaticLayout: true,
+                    minimap: { enabled: true },
+                    cursorSmoothCaretAnimation: true,
+                    smoothScrolling: true
+                });
+            });
+
+            // Handle Code Execution
+            document.getElementById('run-btn').addEventListener('click', async () => {
+                const code = window.editor.getValue();
+                const outputEl = document.getElementById('output-content');
+                const statusEl = document.getElementById('exec-status');
+                const timeEl = document.getElementById('metric-time');
+                const memEl = document.getElementById('metric-memory');
+
+                outputEl.textContent = "Compiling and running...";
+                outputEl.className = "text-info font-monospace";
+                statusEl.textContent = "Processing";
+                statusEl.className = "small badge bg-info";
+
+                try {
+                    const response = await fetch('/api/v1/code/execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: code, language: 'java' })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'SUCCESS') {
+                        outputEl.textContent = result.output || result.message;
+                        outputEl.className = "text-success font-monospace";
+                        statusEl.textContent = "Success";
+                        statusEl.className = "small badge bg-success";
+                        timeEl.textContent = result.executionTimeMs + "ms";
+                        memEl.textContent = (result.memoryUsedKb / 1024).toFixed(1) + "MB";
+                    } else {
+                        outputEl.textContent = result.error || result.compileOutput || result.message;
+                        outputEl.className = "text-danger font-monospace";
+                        statusEl.textContent = "Error";
+                        statusEl.className = "small badge bg-danger";
+                    }
+                } catch (error) {
+                    outputEl.textContent = "Error: " + error.message;
+                    outputEl.className = "text-danger font-monospace";
+                    statusEl.textContent = "Failed";
+                    statusEl.className = "small badge bg-danger";
+                }
+            });
+
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                window.editor.setValue("");
+                document.getElementById('output-content').textContent = "Console cleared...";
+            });
+        </script>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{tutorials/layout}">
+
+<head>
+    <title>JavaMaster - Learn Java Programming</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Hero Section -->
+        <div class="row align-items-center mb-5">
+            <div class="col-lg-6">
+                <h1 class="display-3 mb-4 fw-bold">Master Java Programming with <span class="text-primary">Interactive
+                        Tutorials</span></h1>
+                <p class="lead text-muted mb-4">The most comprehensive and interactive platform to learn Java. Run code,
+                    track progress, and build foundation with quality tutorials.</p>
+                <div class="d-flex gap-3">
+                    <a th:href="@{/tutorials/playground}" class="btn btn-premium btn-lg">Try Workbench</a>
+                    <a href="#categories" class="btn btn-outline-light btn-lg">Browse Tutorials</a>
+                </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="premium-card p-4 glass-effect">
+                    <pre class="m-0" style="color: #60a5fa; font-size: 0.9rem;"><code>public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Welcome to JavaMaster!");
+        
+        Learner vijay = new Learner("Vijay");
+        while(!vijay.isMaster()) {
+            vijay.practice();
+            vijay.learn();
+        }
+    }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories Section -->
+        <div id="categories" class="pt-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h3">Learning Paths</h2>
+                <a href="#" class="text-primary text-decoration-none">View all <i
+                        class="fas fa-arrow-right ms-2"></i></a>
+            </div>
+
+            <div class="row g-4">
+                <div th:each="category : ${categories}" class="col-md-6 col-lg-4">
+                    <div class="premium-card h-100 p-4">
+                        <div class="mb-4 d-inline-block p-3 rounded-3 bg-primary bg-opacity-10 text-primary">
+                            <i th:class="${category.icon != null ? category.icon : 'fas fa-book-open'} + ' fa-2x'"></i>
+                        </div>
+                        <h3 class="h4 mb-2" th:text="${category.name}">Java Basics</h3>
+                        <p class="text-muted small mb-4"
+                            th:text="${category.description != null ? category.description : 'Explore fundamentals and master core concepts.'}">
+                            Fundamental concepts for absolute beginners.
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <span class="badge bg-secondary" th:text="${category.tutorialCount + ' Tutorials'}">0
+                                Tutorials</span>
+                            <a th:href="@{/tutorials/category/{slug}(slug=${category.slug})}"
+                                class="text-primary text-decoration-none fw-bold">
+                                Get Started <i class="fas fa-chevron-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Placeholder if no categories -->
+                <div th:if="${categories.empty}" class="col-12 text-center py-5">
+                    <div class="p-5 premium-card glass-effect">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No categories available yet. Stay tuned!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div layout:fragment="scripts">
+        <!-- Any page specific scripts -->
+    </div>
+</body>
+
+</html>
