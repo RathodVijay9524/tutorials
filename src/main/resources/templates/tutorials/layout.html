@@ -152,7 +152,9 @@
                         </a>
                         <span class="me-3 text-muted">Welcome, <span sec:authentication="name"
                                 class="text-light">User</span></span>
-                        <a th:href="@{/logout}" class="btn btn-outline-danger btn-sm">Logout</a>
+                        <form th:action="@{/logout}" method="post" id="logoutForm" style="display: none;"></form>
+                        <a href="javascript:void(0)" onclick="document.getElementById('logoutForm').submit();"
+                            class="btn btn-outline-danger btn-sm">Logout</a>
                     </div>
                     <div sec:authorize="isAnonymous()">
                         <a th:href="@{/login}" class="btn btn-outline-primary me-2">Login</a>
