@@ -1,10 +1,7 @@
 package com.vijay.User_Master.controller.view;
 
-import com.vijay.User_Master.dto.tutorial.TutorialCategoryDTO;
-import com.vijay.User_Master.dto.tutorial.TutorialDTO;
-import com.vijay.User_Master.dto.tutorial.QuestionDTO;
-import com.vijay.User_Master.dto.tutorial.QuestionOptionDTO;
-import com.vijay.User_Master.dto.tutorial.QuizDTO;
+import com.vijay.User_Master.dto.tutorial.*;
+import com.vijay.User_Master.service.CourseService;
 import com.vijay.User_Master.service.QuizService;
 import com.vijay.User_Master.service.TutorialCategoryService;
 import com.vijay.User_Master.service.TutorialService;
@@ -24,6 +21,7 @@ public class AdminViewController {
     private final TutorialCategoryService categoryService;
     private final TutorialService tutorialService;
     private final QuizService quizService;
+    private final CourseService courseService;
 
     // ========== DASHBOARD ==========
 
@@ -32,10 +30,12 @@ public class AdminViewController {
         List<TutorialCategoryDTO> categories = categoryService.getAllCategories();
         Page<TutorialDTO> tutorials = tutorialService.getAllPublishedTutorials(0, 1000, "id", "asc");
         List<QuizDTO> quizzes = quizService.getAllQuizzes();
+        Page<CourseDTO> courses = courseService.getAllCourses(0, 1000, "id", "asc");
         
         model.addAttribute("categoryCount", categories.size());
         model.addAttribute("tutorialCount", tutorials.getTotalElements());
         model.addAttribute("quizCount", quizzes.size());
+        model.addAttribute("courseCount", courses.getTotalElements());
         model.addAttribute("title", "Admin Dashboard");
         return "admin/dashboard";
     }
@@ -89,7 +89,7 @@ public class AdminViewController {
 
     @GetMapping("/tutorials")
     public String listTutorials(@RequestParam(defaultValue = "0") int page, Model model) {
-        Page<TutorialDTO> tutorials = tutorialService.getAllPublishedTutorials(page, 20, "id", "desc");
+        Page<TutorialDTO> tutorials = tutorialService.getAllTutorials(page, 20, "id", "desc");
         model.addAttribute("tutorials", tutorials);
         model.addAttribute("title", "Manage Tutorials");
         return "admin/tutorials";
@@ -258,5 +258,109 @@ public class AdminViewController {
     public String deleteOption(@PathVariable Long id, @RequestParam Long questionId, @RequestParam Long quizId) {
         quizService.deleteOption(id);
         return "redirect:/admin/questions/edit/" + questionId + "?quizId=" + quizId;
+    }
+
+    // ========== COURSE MANAGEMENT ==========
+
+    @GetMapping("/courses")
+    public String listCourses(@RequestParam(defaultValue = "0") int page, Model model) {
+        Page<CourseDTO> courses = courseService.getAllCourses(page, 20, "id", "desc");
+        model.addAttribute("courses", courses);
+        model.addAttribute("title", "Manage Courses");
+        return "admin/courses";
+    }
+
+    @GetMapping("/courses/new")
+    public String newCourseForm(Model model) {
+        model.addAttribute("course", new CourseDTO());
+        model.addAttribute("categories", categoryService.getAllCategories());
+        model.addAttribute("isEdit", false);
+        model.addAttribute("title", "Add Course");
+        return "admin/course-form";
+    }
+
+    @GetMapping("/courses/edit/{id}")
+    public String editCourseForm(@PathVariable Long id, Model model) {
+        CourseDTO course = courseService.getCourseById(id);
+        model.addAttribute("course", course);
+        model.addAttribute("categories", categoryService.getAllCategories());
+        model.addAttribute("isEdit", true);
+        model.addAttribute("title", "Edit Course");
+        return "admin/course-form";
+    }
+
+    @PostMapping("/courses/save")
+    public String saveCourse(@ModelAttribute CourseDTO course) {
+        if (course.getId() == null) {
+            courseService.createCourse(course);
+        } else {
+            courseService.updateCourse(course.getId(), course);
+        }
+        return "redirect:/admin/courses";
+    }
+
+    @PostMapping("/courses/publish/{id}")
+    public String publishCourse(@PathVariable Long id) {
+        courseService.publishCourse(id);
+        return "redirect:/admin/courses";
+    }
+
+    @PostMapping("/courses/unpublish/{id}")
+    public String unpublishCourse(@PathVariable Long id) {
+        courseService.unpublishCourse(id);
+        return "redirect:/admin/courses";
+    }
+
+    @PostMapping("/courses/delete/{id}")
+    public String deleteCourse(@PathVariable Long id) {
+        courseService.deleteCourse(id);
+        return "redirect:/admin/courses";
+    }
+
+    // ========== VIDEO LESSON MANAGEMENT ==========
+
+    @GetMapping("/courses/{courseId}/lessons")
+    public String listLessons(@PathVariable Long courseId, Model model) {
+        CourseDTO course = courseService.getCourseById(courseId);
+        model.addAttribute("course", course);
+        model.addAttribute("title", "Manage Lessons - " + course.getTitle());
+        return "admin/video-lessons";
+    }
+
+    @GetMapping("/courses/{courseId}/lessons/new")
+    public String newLessonForm(@PathVariable Long courseId, Model model) {
+        VideoLessonDTO lesson = new VideoLessonDTO();
+        lesson.setCourseId(courseId);
+        model.addAttribute("lesson", lesson);
+        model.addAttribute("courseId", courseId);
+        model.addAttribute("isEdit", false);
+        model.addAttribute("title", "Add Lesson");
+        return "admin/video-lesson-form";
+    }
+
+    @GetMapping("/lessons/edit/{id}")
+    public String editLessonForm(@PathVariable Long id, Model model) {
+        VideoLessonDTO lesson = courseService.getLessonById(id);
+        model.addAttribute("lesson", lesson);
+        model.addAttribute("courseId", lesson.getCourseId());
+        model.addAttribute("isEdit", true);
+        model.addAttribute("title", "Edit Lesson");
+        return "admin/video-lesson-form";
+    }
+
+    @PostMapping("/courses/{courseId}/lessons/save")
+    public String saveLesson(@PathVariable Long courseId, @ModelAttribute VideoLessonDTO lesson) {
+        if (lesson.getId() == null) {
+            courseService.addLesson(courseId, lesson);
+        } else {
+            courseService.updateLesson(lesson.getId(), lesson);
+        }
+        return "redirect:/admin/courses/" + courseId + "/lessons";
+    }
+
+    @PostMapping("/lessons/delete/{id}")
+    public String deleteLesson(@PathVariable Long id, @RequestParam Long courseId) {
+        courseService.deleteLesson(id);
+        return "redirect:/admin/courses/" + courseId + "/lessons";
     }
 }

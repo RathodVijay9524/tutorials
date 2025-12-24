@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{tutorials/layout}">
+
+<head>
+    <title th:text="${lesson.title + ' - ' + course.title}">Watch Lesson</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="row g-0 bg-dark rounded-4 overflow-hidden shadow-2xl mb-4">
+            <!-- Video Player Area -->
+            <div class="col-lg-8 border-end border-secondary border-opacity-25">
+                <div class="ratio ratio-16x9 bg-black">
+                    <!-- Check for YouTube vs Direct URL -->
+                    <iframe
+                        th:if="${#strings.contains(lesson.videoUrl, 'youtube.com') || #strings.contains(lesson.videoUrl, 'youtu.be')}"
+                        th:src="${#strings.contains(lesson.videoUrl, 'watch?v=') ? #strings.replace(lesson.videoUrl, 'watch?v=', 'embed/') : lesson.videoUrl}"
+                        title="YouTube video player" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen></iframe>
+
+                    <video
+                        th:unless="${#strings.contains(lesson.videoUrl, 'youtube.com') || #strings.contains(lesson.videoUrl, 'youtu.be')}"
+                        controls class="w-100 h-100">
+                        <source th:src="${lesson.videoUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+
+            <!-- Content Navigation Sidebar -->
+            <div class="col-lg-4 d-flex flex-column" style="max-height: calc(8/16 * 100vw);">
+                <div class="p-4 bg-dark text-white border-bottom border-secondary border-opacity-25">
+                    <h5 class="fw-bold outfit-font mb-1">Course Content</h5>
+                    <div class="small opacity-50" th:text="${course.lessons.size() + ' Total Lessons'}">10 Total Lessons
+                    </div>
+                </div>
+                <div class="flex-grow-1 overflow-auto bg-dark custom-scrollbar">
+                    <div class="list-group list-group-flush">
+                        <a th:each="clesson : ${course.lessons}"
+                            th:href="@{/tutorials/courses/{courseSlug}/watch/{lessonSlug}(courseSlug=${course.slug}, lessonSlug=${clesson.slug})}"
+                            class="list-group-item list-group-item-action bg-dark text-white border-secondary border-opacity-10 py-3"
+                            th:classappend="${clesson.id == lesson.id} ? 'active-lesson' : ''">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="lesson-num fw-bold small"
+                                    th:classappend="${clesson.id == lesson.id} ? 'bg-primary' : 'bg-secondary bg-opacity-25'"
+                                    th:text="${clesson.lessonOrder}">1</div>
+                                <div class="flex-grow-1 small" th:text="${clesson.title}">Lesson Title</div>
+                                <div th:if="${clesson.id == lesson.id}" class="text-primary"><i class="fas fa-play"></i>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lesson Info -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="p-4 bg-white rounded-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="fw-bold outfit-font mb-0" th:text="${lesson.title}">Lesson Title</h2>
+                    </div>
+
+                    <div class="lesson-summary text-muted" style="white-space: pre-line;" th:text="${lesson.summary}">
+                        Lesson summary content goes here...
+                    </div>
+
+                    <hr class="my-5">
+
+                    <div class="d-flex justify-content-between">
+                        <!-- Navigation Buttons -->
+                        <div th:each="i : ${#numbers.sequence(0, course.lessons.size() - 1)}"
+                            th:if="${course.lessons[i].id == lesson.id}">
+                            <a th:if="${i > 0}"
+                                th:href="@{/tutorials/courses/{courseSlug}/watch/{lessonSlug}(courseSlug=${course.slug}, lessonSlug=${course.lessons[i-1].slug})}"
+                                class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="fas fa-arrow-left me-2"></i>Previous Lesson
+                            </a>
+                        </div>
+
+                        <div th:each="i : ${#numbers.sequence(0, course.lessons.size() - 1)}"
+                            th:if="${course.lessons[i].id == lesson.id}">
+                            <a th:if="${i < course.lessons.size() - 1}"
+                                th:href="@{/tutorials/courses/{courseSlug}/watch/{lessonSlug}(courseSlug=${course.slug}, lessonSlug=${course.lessons[i+1].slug})}"
+                                class="btn btn-primary rounded-pill px-4">
+                                Next Lesson<i class="fas fa-arrow-right ms-2"></i>
+                            </a>
+                            <a th:if="${i == course.lessons.size() - 1}"
+                                th:href="@{/tutorials/courses/view/{slug}(slug=${course.slug})}"
+                                class="btn btn-success rounded-pill px-4">
+                                Course Completed<i class="fas fa-check ms-2"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block layout:fragment="styles">
+        <style>
+            .outfit-font {
+                font-family: 'Outfit', sans-serif;
+            }
+
+            .active-lesson {
+                background-color: rgba(99, 102, 241, 0.1) !important;
+                border-left: 4px solid var(--bs-primary) !important;
+            }
+
+            .lesson-num {
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                font-size: 0.75rem;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: #000;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #333;
+                border-radius: 10px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #444;
+            }
+        </style>
+    </th:block>
+</body>
+
+</html>

@@ -1,9 +1,6 @@
 package com.vijay.User_Master.controller.view;
 
-import com.vijay.User_Master.dto.tutorial.BookmarkDTO;
-import com.vijay.User_Master.dto.tutorial.TutorialCategoryDTO;
-import com.vijay.User_Master.dto.tutorial.TutorialDTO;
-import com.vijay.User_Master.dto.tutorial.UserProgressDTO;
+import com.vijay.User_Master.dto.tutorial.*;
 import com.vijay.User_Master.dto.UserResponse;
 import com.vijay.User_Master.repository.UserProgressRepository;
 import com.vijay.User_Master.service.*;
@@ -29,6 +26,7 @@ public class TutorialViewController {
     private final BookmarkService bookmarkService;
     private final UserService userService;
     private final UserProgressRepository progressRepository;
+    private final CourseService courseService;
 
     @GetMapping
     public String home(Model model) {
@@ -155,6 +153,35 @@ public class TutorialViewController {
             return "redirect:/login";
         }
         return "tutorials/dashboard";
+    }
+
+    // ========== COURSE PUBLIC VIEW ==========
+
+    @GetMapping("/courses")
+    public String browseCourses(@RequestParam(defaultValue = "0") int page, Model model) {
+        Page<CourseDTO> courses = courseService.getPublishedCourses(page, 12, "id", "desc");
+        model.addAttribute("courses", courses);
+        model.addAttribute("title", "Online Courses - Video Tutorials");
+        return "tutorials/courses";
+    }
+
+    @GetMapping("/courses/view/{slug}")
+    public String viewCourse(@PathVariable String slug, Model model) {
+        CourseDTO course = courseService.getCourseBySlug(slug);
+        model.addAttribute("course", course);
+        model.addAttribute("title", course.getTitle());
+        return "tutorials/course-detail";
+    }
+
+    @GetMapping("/courses/{courseSlug}/watch/{lessonSlug}")
+    public String watchLesson(@PathVariable String courseSlug, @PathVariable String lessonSlug, Model model) {
+        CourseDTO course = courseService.getCourseBySlug(courseSlug);
+        VideoLessonDTO lesson = courseService.getLessonBySlug(courseSlug, lessonSlug);
+        
+        model.addAttribute("course", course);
+        model.addAttribute("lesson", lesson);
+        model.addAttribute("title", lesson.getTitle() + " - " + course.getTitle());
+        return "tutorials/watch-lesson";
     }
 }
 

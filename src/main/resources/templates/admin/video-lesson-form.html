@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title th:text="${isEdit ? 'Edit Lesson' : 'Add Lesson'}">Add Lesson</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/admin/courses}">Courses</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/admin/courses/{id}/lessons(id=${courseId})}">Lessons</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${isEdit ? 'Edit' : 'New'}">New</li>
+                </ol>
+            </nav>
+            <h2 th:text="${isEdit ? 'Edit Video Lesson' : 'Add New Video Lesson'}">Add New Video Lesson</h2>
+        </div>
+
+        <div class="admin-card">
+            <form th:action="@{/admin/courses/{courseId}/lessons/save(courseId=${courseId})}" th:object="${lesson}"
+                method="post" enctype="multipart/form-data">
+                <input type="hidden" th:field="*{id}" />
+                <input type="hidden" th:field="*{courseId}" />
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Lesson Title</label>
+                            <input type="text" class="form-control" id="title" th:field="*{title}" required
+                                placeholder="e.g. Setting up Spring Boot Environment">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="slug" class="form-label">Lesson Slug</label>
+                            <input type="text" class="form-control" id="slug" th:field="*{slug}" required
+                                placeholder="e.g. setting-up-spring-boot">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="videoUrl" class="form-label">Video URL (YouTube/Vimeo/Direct)</label>
+                            <input type="text" class="form-control" id="videoUrl" th:field="*{videoUrl}"
+                                placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                            <div class="form-text">Optional if you are uploading a file below.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="videoFile" class="form-label">OR Upload Video File</label>
+                            <input type="file" class="form-control" id="videoFile" name="videoFile" accept="video/*">
+                            <div class="form-text">Max size depend on server configuration (default 1MB, usually needs
+                                adjustment in application.properties).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="summary" class="form-label">Lesson Summary</label>
+                            <textarea class="form-control" id="summary" th:field="*{summary}" rows="5"
+                                placeholder="Briefly describe what is covered in this session..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="lessonOrder" class="form-label">Lesson Number / Order</label>
+                            <input type="number" class="form-control" id="lessonOrder" th:field="*{lessonOrder}"
+                                required min="1">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="durationSeconds" class="form-label">Duration (in seconds)</label>
+                            <input type="number" class="form-control" id="durationSeconds" th:field="*{durationSeconds}"
+                                min="0">
+                            <small class="text-muted">Example: 600 for 10 minutes.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-between">
+                    <a th:href="@{/admin/courses/{id}/lessons(id=${courseId})}"
+                        class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-admin">
+                        <i class="fas fa-save me-2"></i>Save Lesson
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script>
+            // Simple slug generator from title
+            document.getElementById('title').addEventListener('blur', function () {
+                const title = this.value;
+                const slugInput = document.getElementById('slug');
+                if (title && !slugInput.value) {
+                    slugInput.value = title.toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[\s_-]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                }
+            });
+        </script>
+    </th:block>
+</body>
+
+</html>

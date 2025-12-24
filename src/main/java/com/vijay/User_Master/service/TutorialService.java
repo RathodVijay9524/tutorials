@@ -43,6 +43,15 @@ public class TutorialService {
     }
 
     @Transactional(readOnly = true)
+    public Page<TutorialDTO> getAllTutorials(int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        return tutorialRepository.findAll(pageable)
+                .map(this::convertToDTO);
+    }
+
+    @Transactional(readOnly = true)
     public Page<TutorialDTO> getTutorialsByCategory(Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return tutorialRepository.findByCategoryIdAndIsPublishedTrue(categoryId, pageable)

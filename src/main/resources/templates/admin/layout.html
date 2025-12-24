@@ -262,6 +262,9 @@
                     <li><a th:href="@{/admin/tutorials}"
                             th:classappend="${#strings.contains(title, 'Tutorial')} ? 'active' : ''"><i
                                 class="fas fa-book"></i> Tutorials</a></li>
+                    <li><a th:href="@{/admin/courses}"
+                            th:classappend="${#strings.contains(title, 'Course')} ? 'active' : ''"><i
+                                class="fas fa-video"></i> Courses</a></li>
                     <li><a th:href="@{/admin/quizzes}"
                             th:classappend="${#strings.contains(title, 'Quiz')} ? 'active' : ''"><i
                                 class="fas fa-question-circle"></i> Quizzes</a></li>

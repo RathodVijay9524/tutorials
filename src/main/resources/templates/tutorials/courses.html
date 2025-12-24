@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{tutorials/layout}">
+
+<head>
+    <title>Video Courses - JavaMaster</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Hero Section -->
+        <section class="py-5 bg-dark text-white rounded-4 mb-5 shadow-lg overflow-hidden position-relative">
+            <div class="position-absolute top-0 start-0 w-100 h-100"
+                style="background: linear-gradient(45deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.2) 100%); z-index: 0;">
+            </div>
+            <div class="container position-relative" style="z-index: 1;">
+                <div class="row align-items-center">
+                    <div class="col-lg-7">
+                        <h1 class="display-4 fw-bold mb-3 outfit-font">Master Your Craft with Video Courses</h1>
+                        <p class="lead mb-4 opacity-75">Learn Java, Spring Boot, React and more through structured,
+                            high-quality recorded video sessions. Practical learning for modern developers.</p>
+                        <div class="d-flex gap-3">
+                            <a href="#browse" class="btn btn-primary btn-lg rounded-pill px-4">Browse Courses</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Courses Grid -->
+        <div id="browse" class="container py-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="outfit-font fw-bold">Explore Our Courses</h2>
+                <div class="text-muted" th:text="${courses.totalElements + ' courses available'}">10 courses available
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4" th:each="course : ${courses.content}">
+                    <div class="card h-100 border-0 shadow-sm transition-hover overflow-hidden rounded-4">
+                        <div class="position-relative">
+                            <img th:if="${course.thumbnailUrl}" th:src="${course.thumbnailUrl}" class="card-img-top"
+                                th:alt="${course.title}" style="height: 200px; object-fit: cover;">
+                            <div th:unless="${course.thumbnailUrl}"
+                                class="bg-primary bg-gradient d-flex align-items-center justify-content-center text-white"
+                                style="height: 200px;">
+                                <i class="fas fa-video fa-4x opacity-25"></i>
+                            </div>
+                            <span
+                                class="position-absolute top-0 end-0 m-3 badge bg-dark bg-opacity-75 rounded-pill px-3 py-2"
+                                th:text="${course.difficulty}">Beginner</span>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 mb-2"
+                                    th:text="${course.categoryName}">Java</span>
+                            </div>
+                            <h5 class="card-title fw-bold outfit-font mb-3" th:text="${course.title}">Mastering Spring
+                                Boot 3.x</h5>
+                            <p class="card-text text-muted small mb-4"
+                                th:text="${#strings.abbreviate(course.description, 100)}">Learn the latest features of
+                                Spring Boot 3.x through practical projects and clear explanations.</p>
+
+                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                <div class="d-flex align-items-center text-muted small">
+                                    <i class="fas fa-play-circle me-2"></i>
+                                    <span
+                                        th:text="${course.lessons != null ? course.lessons.size() : 0} + ' Lessons'">12
+                                        Lessons</span>
+                                </div>
+                                <a th:href="@{/tutorials/courses/view/{slug}(slug=${course.slug})}"
+                                    class="btn btn-outline-primary rounded-pill px-4">View Course</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="col-12 text-center py-5" th:if="${courses.totalElements == 0}">
+                    <div class="mb-4">
+                        <i class="fas fa-video-slash fa-4x text-muted opacity-25"></i>
+                    </div>
+                    <h3 class="fw-bold">No Courses Published Yet</h3>
+                    <p class="text-muted">Our experts are working hard to create amazing video content for you. Check
+                        back soon!</p>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav th:if="${courses.totalPages > 1}" class="mt-5">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item" th:classappend="${courses.first} ? 'disabled'">
+                        <a class="page-link rounded-start-pill px-3"
+                            th:href="@{/courses(page=${courses.number - 1})}">Previous</a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, courses.totalPages - 1)}"
+                        th:classappend="${courses.number == i} ? 'active'">
+                        <a class="page-link px-3" th:href="@{/courses(page=${i})}" th:text="${i + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${courses.last} ? 'disabled'">
+                        <a class="page-link rounded-end-pill px-3"
+                            th:href="@{/courses(page=${courses.number + 1})}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <th:block layout:fragment="styles">
+        <style>
+            .outfit-font {
+                font-family: 'Outfit', sans-serif;
+            }
+
+            .transition-hover {
+                transition: all 0.3s ease;
+            }
+
+            .transition-hover:hover {
+                transform: translateY(-10px);
+            }
+
+            .pagination .page-link {
+                border: none;
+                color: var(--bs-primary);
+                background: transparent;
+            }
+
+            .pagination .page-item.active .page-link {
+                background: var(--bs-primary);
+                color: white;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        </style>
+    </th:block>
+</body>
+
+</html>

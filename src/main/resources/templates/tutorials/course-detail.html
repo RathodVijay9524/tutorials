@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{tutorials/layout}">
+
+<head>
+    <title th:text="${course.title + ' - JavaMaster'}">Course Detail</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Course Header -->
+        <div class="row g-4 mb-5">
+            <div class="col-lg-8">
+                <nav aria-label="breadcrumb" class="mb-4">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a th:href="@{/tutorials/courses}">Courses</a></li>
+                        <li class="breadcrumb-item active" aria-current="page" th:text="${course.categoryName}">Category
+                        </li>
+                    </ol>
+                </nav>
+
+                <h1 class="display-5 fw-bold outfit-font mb-4" th:text="${course.title}">Course Title</h1>
+                <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+                    <span class="badge bg-primary px-3 py-2 rounded-pill" th:text="${course.difficulty}">Beginner</span>
+                    <span class="text-muted"><i class="fas fa-video me-2"></i><span
+                            th:text="${course.lessons.size()}">0</span> Lessons</span>
+                    <span class="text-muted"><i class="fas fa-user-edit me-2"></i>Instructor: <span
+                            th:text="${course.authorName}">Author</span></span>
+                </div>
+
+                <div class="course-description mb-5">
+                    <h3 class="fw-bold outfit-font mb-3">About this Course</h3>
+                    <div class="text-muted lead-sm" style="white-space: pre-line;" th:text="${course.description}">
+                        Course description goes here...</div>
+                </div>
+
+                <!-- Lessons List -->
+                <div class="lessons-list">
+                    <h3 class="fw-bold outfit-font mb-4">Course Content</h3>
+                    <div class="list-group list-group-flush rounded-4 overflow-hidden border">
+                        <a th:each="lesson : ${course.lessons}"
+                            th:href="@{/tutorials/courses/{courseSlug}/watch/{lessonSlug}(courseSlug=${course.slug}, lessonSlug=${lesson.slug})}"
+                            class="list-group-item list-group-item-action py-3 d-flex align-items-center gap-3">
+                            <div class="lesson-num fw-bold text-primary" th:text="${lesson.lessonOrder}">1</div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold mb-1" th:text="${lesson.title}">Lesson Title</div>
+                                <div th:if="${lesson.durationSeconds != null}" class="text-muted small">
+                                    <i class="fas fa-clock me-1"></i>
+                                    <span th:text="${lesson.durationSeconds / 60 + ' min'}">10 min</span>
+                                </div>
+                            </div>
+                            <div class="text-primary opacity-50"><i class="fas fa-play-circle fa-lg"></i></div>
+                        </a>
+                        <div th:if="${#lists.isEmpty(course.lessons)}"
+                            class="list-group-item py-5 text-center text-muted">
+                            No lessons recorded for this course yet.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden sticky-top" style="top: 2rem;">
+                    <img th:if="${course.thumbnailUrl}" th:src="${course.thumbnailUrl}" class="card-img-top"
+                        th:alt="${course.title}" style="height: 220px; object-fit: cover;">
+                    <div th:unless="${course.thumbnailUrl}"
+                        class="bg-primary bg-gradient d-flex align-items-center justify-content-center text-white"
+                        style="height: 220px;">
+                        <i class="fas fa-video fa-5x opacity-25"></i>
+                    </div>
+                    <div class="card-body p-4 text-center">
+                        <a th:if="${!#lists.isEmpty(course.lessons)}"
+                            th:href="@{/tutorials/courses/{courseSlug}/watch/{lessonSlug}(courseSlug=${course.slug}, lessonSlug=${course.lessons[0].slug})}"
+                            class="btn btn-primary btn-lg w-100 rounded-pill mb-3 py-3 fw-bold">
+                            <i class="fas fa-play me-2"></i>Start Learning Now
+                        </a>
+                        <button th:if="${#lists.isEmpty(course.lessons)}"
+                            class="btn btn-secondary btn-lg w-100 rounded-pill disabled mb-3 py-3">
+                            Coming Soon
+                        </button>
+                        <p class="text-muted small mb-0">Full Lifetime Access • Structured Learning</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block layout:fragment="styles">
+        <style>
+            .outfit-font {
+                font-family: 'Outfit', sans-serif;
+            }
+
+            .lesson-num {
+                width: 30px;
+                height: 30px;
+                background: rgba(99, 102, 241, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+            }
+
+            .list-group-item:hover .text-primary {
+                opacity: 1 !important;
+                transform: scale(1.1);
+                transition: all 0.2s;
+            }
+        </style>
+    </th:block>
+</body>
+
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title th:text="${isEdit ? 'Edit Course' : 'Add Course'}">Add Course</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/admin/courses}">Courses</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${isEdit ? 'Edit' : 'New'}">New</li>
+                </ol>
+            </nav>
+            <h2 th:text="${isEdit ? 'Edit Course' : 'Create New Course'}">Create New Course</h2>
+        </div>
+
+        <div class="admin-card">
+            <form th:action="@{/admin/courses/save}" th:object="${course}" method="post">
+                <input type="hidden" th:field="*{id}" />
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Course Title</label>
+                            <input type="text" class="form-control" id="title" th:field="*{title}" required
+                                placeholder="e.g. Master Java Programming from Scratch">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="slug" class="form-label">Slug (URL friendly)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">/courses/view/</span>
+                                <input type="text" class="form-control" id="slug" th:field="*{slug}" required
+                                    placeholder="e.g. master-java-programming">
+                            </div>
+                            <small class="text-muted">Unique identifier used in the URL.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" th:field="*{description}" rows="6"
+                                placeholder="Provide a comprehensive summary of the course..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="categoryId" class="form-label">Category</label>
+                            <select class="form-select" id="categoryId" th:field="*{categoryId}" required>
+                                <option value="">-- Select Category --</option>
+                                <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}">
+                                    Category</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="difficulty" class="form-label">Difficulty Level</label>
+                            <select class="form-select" id="difficulty" th:field="*{difficulty}" required>
+                                <option value="BEGINNER">BEGINNER</option>
+                                <option value="INTERMEDIATE">INTERMEDIATE</option>
+                                <option value="ADVANCED">ADVANCED</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="thumbnailUrl" class="form-label">Thumbnail URL</label>
+                            <input type="url" class="form-control" id="thumbnailUrl" th:field="*{thumbnailUrl}"
+                                placeholder="https://example.com/image.jpg">
+                            <div class="mt-2 preview-container" th:show="${course.thumbnailUrl != null}">
+                                <img id="thumbnailPreview" th:src="*{thumbnailUrl}" class="img-fluid rounded border"
+                                    style="max-height: 150px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-between">
+                    <a th:href="@{/admin/courses}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-admin">
+                        <i class="fas fa-save me-2"></i>Save Course
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script>
+            // Simple slug generator from title
+            document.getElementById('title').addEventListener('blur', function () {
+                const title = this.value;
+                const slugInput = document.getElementById('slug');
+                if (title && !slugInput.value) {
+                    slugInput.value = title.toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[\s_-]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                }
+            });
+
+            // Thumbnail preview
+            document.getElementById('thumbnailUrl').addEventListener('input', function () {
+                const url = this.value;
+                const preview = document.getElementById('thumbnailPreview');
+                if (url) {
+                    preview.src = url;
+                    preview.parentElement.style.display = 'block';
+                } else {
+                    preview.parentElement.style.display = 'none';
+                }
+            });
+        </script>
+    </th:block>
+</body>
+
+</html>
