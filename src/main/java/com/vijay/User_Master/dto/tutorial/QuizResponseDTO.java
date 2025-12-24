@@ -17,7 +17,7 @@ public class QuizResponseDTO {
     private String selectedOptionText;
     private Long correctOptionId;
     private String correctOptionText;
-    private boolean isCorrect;
+    private boolean correct;
     private Integer pointsEarned;
     private String explanation;
 }

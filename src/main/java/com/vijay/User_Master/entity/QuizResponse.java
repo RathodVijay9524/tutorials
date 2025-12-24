@@ -32,7 +32,7 @@ public class QuizResponse {
 
     @Column(name = "is_correct")
     @Builder.Default
-    private boolean isCorrect = false;
+    private boolean correct = false;
 
     @Column(name = "points_earned")
     @Builder.Default

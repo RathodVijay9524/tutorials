@@ -27,7 +27,7 @@ public class QuestionOption {
 
     @Column(name = "is_correct")
     @Builder.Default
-    private boolean isCorrect = false;
+    private boolean correct = false;
 
     @Column(name = "display_order")
     @Builder.Default

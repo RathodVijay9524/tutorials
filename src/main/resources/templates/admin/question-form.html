@@ -124,6 +124,9 @@
                     document.addEventListener('DOMContentLoaded', function () {
                         const radios = document.querySelectorAll('.correct-radio');
                         const hiddens = document.querySelectorAll('.is-correct-hidden');
+                        const typeSelect = document.getElementById('questionType');
+                        const optionRows = document.querySelectorAll('tbody tr');
+                        const optionInputs = document.querySelectorAll('input[name^="options"][name$=".optionText"]');
 
                         function updateCorrectState() {
                             radios.forEach((radio, index) => {
@@ -131,12 +134,40 @@
                             });
                         }
 
+                        function handleTypeChange() {
+                            const type = typeSelect.value;
+                            if (type === 'TRUE_FALSE') {
+                                // Pre-fill True/False
+                                if (optionInputs.length >= 2) {
+                                    optionInputs[0].value = 'True';
+                                    optionInputs[1].value = 'False';
+                                }
+                                // Hide rows 3 and 4
+                                optionRows.forEach((row, index) => {
+                                    if (index >= 2) {
+                                        row.style.display = 'none';
+                                        // Clear values to avoid confusion
+                                        const input = row.querySelector('input[type="text"]');
+                                        if (input) input.value = '';
+                                    } else {
+                                        row.style.display = '';
+                                    }
+                                });
+                            } else {
+                                // Show all rows for Multiple Choice and Code
+                                optionRows.forEach(row => row.style.display = '');
+                            }
+                        }
+
                         radios.forEach(radio => {
                             radio.addEventListener('change', updateCorrectState);
                         });
 
+                        typeSelect.addEventListener('change', handleTypeChange);
+
                         // Initial state
                         updateCorrectState();
+                        handleTypeChange();
                     });
                 </script>
 
@@ -165,8 +196,8 @@
                                     <td th:text="${opt.displayOrder}">1</td>
                                     <td th:text="${opt.optionText}">Option Text</td>
                                     <td>
-                                        <span th:if="${opt.isCorrect}" class="badge bg-success">Correct</span>
-                                        <span th:unless="${opt.isCorrect}" class="badge bg-secondary">Incorrect</span>
+                                        <span th:if="${opt.correct}" class="badge bg-success">Correct</span>
+                                        <span th:unless="${opt.correct}" class="badge bg-secondary">Incorrect</span>
                                     </td>
                                     <td class="text-end">
                                         <form th:action="@{/admin/options/delete/{id}(id=${opt.id})}" method="post"
@@ -223,8 +254,8 @@
                                 </div>
                                 <div class="col-md-6 mb-3 d-flex align-items-end">
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" name="isCorrect" id="isCorrect">
-                                        <label class="form-check-label" for="isCorrect">Is Correct Answer</label>
+                                        <input class="form-check-input" type="checkbox" name="correct" id="correct">
+                                        <label class="form-check-label" for="correct">Is Correct Answer</label>
                                     </div>
                                 </div>
                             </div>

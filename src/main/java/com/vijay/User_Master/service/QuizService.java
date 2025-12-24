@@ -137,7 +137,7 @@ public class QuizService {
                     .quizAttempt(attempt)
                     .question(question)
                     .selectedOption(selectedOption)
-                    .isCorrect(isCorrect)
+                    .correct(isCorrect)
                     .pointsEarned(pointsEarned)
                     .build();
             
@@ -286,7 +286,7 @@ public class QuizService {
                     QuestionOption option = QuestionOption.builder()
                             .question(question)
                             .optionText(optionDTO.getOptionText())
-                            .isCorrect(optionDTO.isCorrect())
+                            .correct(optionDTO.isCorrect())
                             .displayOrder(optionDTO.getDisplayOrder() != null ? optionDTO.getDisplayOrder() : 0)
                             .build();
                     optionRepository.save(option);
@@ -469,7 +469,7 @@ public class QuizService {
                 .selectedOptionText(response.getSelectedOption() != null ? response.getSelectedOption().getOptionText() : null)
                 .correctOptionId(correctOption != null ? correctOption.getId() : null)
                 .correctOptionText(correctOption != null ? correctOption.getOptionText() : null)
-                .isCorrect(response.isCorrect())
+                .correct(response.isCorrect())
                 .pointsEarned(response.getPointsEarned())
                 .explanation(question.getExplanation())
                 .build();
@@ -518,10 +518,10 @@ public class QuizService {
         q1 = questionRepository.save(q1);
         
         optionRepository.saveAll(List.of(
-            QuestionOption.builder().question(q1).optionText("var count = 10;").isCorrect(false).displayOrder(1).build(),
-            QuestionOption.builder().question(q1).optionText("int count = 10;").isCorrect(true).displayOrder(2).build(),
-            QuestionOption.builder().question(q1).optionText("decimal count = 10;").isCorrect(false).displayOrder(3).build(),
-            QuestionOption.builder().question(q1).optionText("count = 10;").isCorrect(false).displayOrder(4).build()
+            QuestionOption.builder().question(q1).optionText("var count = 10;").correct(false).displayOrder(1).build(),
+            QuestionOption.builder().question(q1).optionText("int count = 10;").correct(true).displayOrder(2).build(),
+            QuestionOption.builder().question(q1).optionText("decimal count = 10;").correct(false).displayOrder(3).build(),
+            QuestionOption.builder().question(q1).optionText("count = 10;").correct(false).displayOrder(4).build()
         ));
 
         // Q2
@@ -536,10 +536,10 @@ public class QuizService {
         q2 = questionRepository.save(q2);
 
         optionRepository.saveAll(List.of(
-            QuestionOption.builder().question(q2).optionText("create").isCorrect(false).displayOrder(1).build(),
-            QuestionOption.builder().question(q2).optionText("make").isCorrect(false).displayOrder(2).build(),
-            QuestionOption.builder().question(q2).optionText("new").isCorrect(true).displayOrder(3).build(),
-            QuestionOption.builder().question(q2).optionText("alloc").isCorrect(false).displayOrder(4).build()
+            QuestionOption.builder().question(q2).optionText("create").correct(false).displayOrder(1).build(),
+            QuestionOption.builder().question(q2).optionText("make").correct(false).displayOrder(2).build(),
+            QuestionOption.builder().question(q2).optionText("new").correct(true).displayOrder(3).build(),
+            QuestionOption.builder().question(q2).optionText("alloc").correct(false).displayOrder(4).build()
         ));
 
         // Q3 (With Code)
@@ -555,10 +555,10 @@ public class QuizService {
         q3 = questionRepository.save(q3);
 
         optionRepository.saveAll(List.of(
-            QuestionOption.builder().question(q3).optionText("x=6, y=6").isCorrect(false).displayOrder(1).build(),
-            QuestionOption.builder().question(q3).optionText("x=5, y=5").isCorrect(false).displayOrder(2).build(),
-            QuestionOption.builder().question(q3).optionText("x=6, y=5").isCorrect(true).displayOrder(3).build(),
-            QuestionOption.builder().question(q3).optionText("x=5, y=6").isCorrect(false).displayOrder(4).build()
+            QuestionOption.builder().question(q3).optionText("x=6, y=6").correct(false).displayOrder(1).build(),
+            QuestionOption.builder().question(q3).optionText("x=5, y=5").correct(false).displayOrder(2).build(),
+            QuestionOption.builder().question(q3).optionText("x=6, y=5").correct(true).displayOrder(3).build(),
+            QuestionOption.builder().question(q3).optionText("x=5, y=6").correct(false).displayOrder(4).build()
         ));
 
         log.info("Sample quiz seeded successfully for tutorial: {}", tutorial.getTitle());
