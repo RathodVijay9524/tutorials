@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title th:text="${isEdit} ? 'Edit Question' : 'Add Question'">Question Form</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/admin/quizzes}">Quizzes</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/admin/quizzes/{id}/questions(id=${quizId})}"
+                            th:text="'Questions'">Questions</a></li>
+                    <li class="breadcrumb-item active" th:text="${isEdit} ? 'Edit Question' : 'Add Question'">Add
+                        Question</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0" th:text="${isEdit} ? 'Edit Question' : 'Add New Question'">New Question</h1>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="admin-card mb-4">
+                    <form th:action="@{/admin/quizzes/{quizId}/questions/save(quizId=${quizId})}"
+                        th:object="${question}" method="post">
+                        <input type="hidden" th:field="*{id}" />
+                        <input type="hidden" th:field="*{quizId}" />
+
+                        <div class="mb-3">
+                            <label for="questionText" class="form-label">Question Text</label>
+                            <textarea id="questionText" th:field="*{questionText}" class="form-control" rows="3"
+                                required placeholder="Enter the question here..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="questionType" class="form-label">Type</label>
+                                <select id="questionType" th:field="*{questionType}" class="form-select">
+                                    <option value="MULTIPLE_CHOICE">Multiple Choice</option>
+                                    <option value="TRUE_FALSE">True/False</option>
+                                    <option value="CODE">Code Based</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="points" class="form-label">Points</label>
+                                <input type="number" id="points" th:field="*{points}" class="form-control" min="1"
+                                    required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="displayOrder" class="form-label">Display Order</label>
+                                <input type="number" id="displayOrder" th:field="*{displayOrder}" class="form-control"
+                                    min="0">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="codeSnippet" class="form-label">Code Snippet (Optional)</label>
+                            <textarea id="codeSnippet" th:field="*{codeSnippet}" class="form-control" rows="4"
+                                placeholder="Paste code snippet here if applicable..."
+                                style="font-family: monospace;"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="explanation" class="form-label">Explanation</label>
+                            <textarea id="explanation" th:field="*{explanation}" class="form-control" rows="2"
+                                placeholder="This will be shown after the user answers..."></textarea>
+                        </div>
+
+                        <!-- Initial Options (Only for New Question) -->
+                        <div th:if="${!isEdit}" class="mt-4 pt-4 border-top">
+                            <h5 class="mb-3">Multiple Choice Options</h5>
+                            <p class="text-muted small mb-3">Enter the choices and select the <strong>Correct</strong>
+                                one.</p>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">#</th>
+                                            <th>Option Text</th>
+                                            <th style="width: 100px;" class="text-center">Correct?</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="opt, iterStat : *{options}">
+                                            <td class="align-middle text-muted" th:text="${iterStat.count}">1</td>
+                                            <td>
+                                                <input type="text"
+                                                    th:field="*{options[__${iterStat.index}__].optionText}"
+                                                    class="form-control" th:placeholder="'Option ' + ${iterStat.count}">
+                                                <input type="hidden"
+                                                    th:field="*{options[__${iterStat.index}__].displayOrder}">
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <div class="form-check d-flex justify-content-center">
+                                                    <input class="form-check-input correct-radio" type="radio"
+                                                        name="correctOptionRadio" th:value="${iterStat.index}"
+                                                        th:checked="${opt.correct}">
+                                                    <input type="hidden"
+                                                        th:field="*{options[__${iterStat.index}__].correct}"
+                                                        class="is-correct-hidden">
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-top">
+                            <button type="submit" class="btn btn-admin" id="save-btn">
+                                <i class="fas fa-save me-2"></i>Save Question
+                            </button>
+                            <a th:href="@{/admin/quizzes/{id}/questions(id=${quizId})}"
+                                class="btn btn-outline-secondary ms-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+
+                <script th:if="${!isEdit}">
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const radios = document.querySelectorAll('.correct-radio');
+                        const hiddens = document.querySelectorAll('.is-correct-hidden');
+
+                        function updateCorrectState() {
+                            radios.forEach((radio, index) => {
+                                hiddens[index].value = radio.checked;
+                            });
+                        }
+
+                        radios.forEach(radio => {
+                            radio.addEventListener('change', updateCorrectState);
+                        });
+
+                        // Initial state
+                        updateCorrectState();
+                    });
+                </script>
+
+                <!-- Option Management (Only for Edit) -->
+                <div th:if="${isEdit}" class="admin-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Options</h5>
+                        <button type="button" class="btn btn-sm btn-admin" data-bs-toggle="modal"
+                            data-bs-target="#addOptionModal">
+                            <i class="fas fa-plus me-1"></i>Add Option
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Option Text</th>
+                                    <th style="width: 100px;">Correct?</th>
+                                    <th class="text-end" style="width: 100px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="opt : ${question.options}">
+                                    <td th:text="${opt.displayOrder}">1</td>
+                                    <td th:text="${opt.optionText}">Option Text</td>
+                                    <td>
+                                        <span th:if="${opt.isCorrect}" class="badge bg-success">Correct</span>
+                                        <span th:unless="${opt.isCorrect}" class="badge bg-secondary">Incorrect</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <form th:action="@{/admin/options/delete/{id}(id=${opt.id})}" method="post"
+                                            class="d-inline" onsubmit="return confirm('Delete this option?');">
+                                            <input type="hidden" name="questionId" th:value="${question.id}" />
+                                            <input type="hidden" name="quizId" th:value="${quizId}" />
+                                            <button type="submit" class="btn btn-sm text-danger p-0" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(question.options)}">
+                                    <td colspan="4" class="text-center py-3 text-muted">No options added yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="admin-card bg-info bg-opacity-10 border-info border-opacity-25 mb-4">
+                    <h6><i class="fas fa-lightbulb me-2 text-info"></i>Tips</h6>
+                    <ul class="small mb-0 ps-3">
+                        <li>Ensure at least one option is marked as <strong>Correct</strong>.</li>
+                        <li>Markdown is <strong>not</strong> supported in question text.</li>
+                        <li>Points are used for weightage in the final score.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Option Modal -->
+        <div th:if="${isEdit}" class="modal fade" id="addOptionModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark border-secondary">
+                    <form th:action="@{/admin/questions/{qId}/options/save(qId=${question.id})}" method="post">
+                        <input type="hidden" name="quizId" th:value="${quizId}" />
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Option</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="optionText" class="form-label">Option Text</label>
+                                <input type="text" id="optionText" name="optionText" class="form-control" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="optOrder" class="form-label">Display Order</label>
+                                    <input type="number" id="optOrder" name="displayOrder" class="form-control"
+                                        value="0">
+                                </div>
+                                <div class="col-md-6 mb-3 d-flex align-items-end">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="isCorrect" id="isCorrect">
+                                        <label class="form-check-label" for="isCorrect">Is Correct Answer</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary"
+                                data-bs-toggle="modal">Close</button>
+                            <button type="submit" class="btn btn-admin">Add Option</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

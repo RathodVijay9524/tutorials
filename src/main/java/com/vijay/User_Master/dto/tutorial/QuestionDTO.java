@@ -13,6 +13,8 @@ import java.util.List;
 @Builder
 public class QuestionDTO {
     private Long id;
+    private Long quizId;
+    private String quizTitle;
     private String questionText;
     private String questionType;
     private String codeSnippet;

@@ -13,6 +13,5 @@ public class QuestionOptionDTO {
     private Long id;
     private String optionText;
     private Integer displayOrder;
-    // Note: isCorrect is intentionally NOT included here to prevent answer leakage
-    // It will only be included in response DTOs after submission
+    private boolean correct;
 }

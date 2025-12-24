@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title th:text="${isEdit} ? 'Edit Tutorial' : 'Add Tutorial'">Tutorial Form</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0" th:text="${isEdit} ? 'Edit Tutorial' : 'Add New Tutorial'">Tutorial Form</h1>
+            <a th:href="@{/admin/tutorials}" class="btn btn-outline-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+
+        <div class="admin-card">
+            <form th:action="@{/admin/tutorials/save}" th:object="${tutorial}" method="post">
+                <input type="hidden" th:field="*{id}">
+
+                <div class="row g-4">
+                    <!-- Basic Info -->
+                    <div class="col-md-8">
+                        <label class="form-label">Title *</label>
+                        <input type="text" th:field="*{title}" class="form-control" required
+                            placeholder="e.g., Understanding Java Collections">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Slug *</label>
+                        <input type="text" th:field="*{slug}" class="form-control" required
+                            placeholder="e.g., java-collections">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Category *</label>
+                        <select th:field="*{categoryId}" class="form-select" required>
+                            <option value="">-- Select Category --</option>
+                            <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}">Category
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Difficulty *</label>
+                        <select th:field="*{difficulty}" class="form-select" required>
+                            <option value="BEGINNER">Beginner</option>
+                            <option value="INTERMEDIATE">Intermediate</option>
+                            <option value="ADVANCED">Advanced</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Estimated Time (minutes)</label>
+                        <input type="number" th:field="*{estimatedMinutes}" class="form-control" value="15">
+                    </div>
+
+                    <!-- Content -->
+                    <div class="col-12">
+                        <label class="form-label">Content (Markdown/HTML) *</label>
+                        <textarea th:field="*{content}" class="form-control" rows="15" required
+                            placeholder="Write your tutorial content here. You can use Markdown or HTML."></textarea>
+                        <small class="text-muted">Supports Markdown formatting</small>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Code Example</label>
+                        <textarea th:field="*{codeExample}" class="form-control font-monospace" rows="8"
+                            placeholder="public class Main { ... }"></textarea>
+                    </div>
+
+                    <!-- SEO -->
+                    <div class="col-12">
+                        <hr class="border-secondary my-3">
+                        <h5 class="text-muted mb-3">SEO Settings</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Meta Title</label>
+                        <input type="text" th:field="*{metaTitle}" class="form-control"
+                            placeholder="SEO title for search engines">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Keywords</label>
+                        <input type="text" th:field="*{keywords}" class="form-control"
+                            placeholder="java, collections, arraylist">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Meta Description</label>
+                        <textarea th:field="*{metaDescription}" class="form-control" rows="2"
+                            placeholder="Brief description for search results"></textarea>
+                    </div>
+
+                    <!-- Video (Optional) -->
+                    <div class="col-12">
+                        <hr class="border-secondary my-3">
+                        <h5 class="text-muted mb-3">Video Content (Optional)</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Video URL</label>
+                        <input type="url" th:field="*{videoUrl}" class="form-control"
+                            placeholder="https://youtube.com/...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Video Duration</label>
+                        <input type="text" th:field="*{videoDuration}" class="form-control" placeholder="12:30">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Display Order</label>
+                        <input type="number" th:field="*{displayOrder}" class="form-control" value="0">
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3" style="border-top: 1px solid var(--border-color);">
+                    <button type="submit" class="btn btn-admin">
+                        <i class="fas fa-save me-2"></i>Save Tutorial
+                    </button>
+                    <a th:href="@{/admin/tutorials}" class="btn btn-outline-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

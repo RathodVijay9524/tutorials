@@ -22,9 +22,9 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     @Query("SELECT DISTINCT q FROM Quiz q LEFT JOIN FETCH q.questions WHERE q.id = :quizId")
     Optional<Quiz> findByIdWithQuestions(@Param("quizId") Long quizId);
 
-    // Find quiz by tutorial with questions (single join to avoid MultipleBagFetchException)
-    @Query("SELECT DISTINCT q FROM Quiz q LEFT JOIN FETCH q.questions WHERE q.tutorial.id = :tutorialId AND q.isActive = true")
-    Optional<Quiz> findByTutorialIdWithQuestions(@Param("tutorialId") Long tutorialId);
+    // Find quiz by tutorial with questions (returns list to avoid NonUniqueResultException if duplicates exist)
+    @Query("SELECT DISTINCT q FROM Quiz q LEFT JOIN FETCH q.questions WHERE q.tutorial.id = :tutorialId AND q.isActive = true ORDER BY q.id DESC")
+    List<Quiz> findByTutorialIdWithQuestions(@Param("tutorialId") Long tutorialId);
 
     // Count quizzes for a tutorial
     long countByTutorialId(Long tutorialId);

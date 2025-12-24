@@ -83,6 +83,10 @@ public class WebSecurityConfig {
                                 "/api/v1/badges/seed",
                                 "/api/v1/comments/tutorial/*"
                         ).permitAll()
+
+                        // 4) Admin routes - require ROLE_ADMIN
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
                         // Require authentication for all other endpoints
                         .anyRequest().authenticated()
                 )

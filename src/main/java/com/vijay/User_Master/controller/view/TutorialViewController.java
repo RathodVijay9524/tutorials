@@ -4,10 +4,9 @@ import com.vijay.User_Master.dto.tutorial.BookmarkDTO;
 import com.vijay.User_Master.dto.tutorial.TutorialCategoryDTO;
 import com.vijay.User_Master.dto.tutorial.TutorialDTO;
 import com.vijay.User_Master.dto.tutorial.UserProgressDTO;
-import com.vijay.User_Master.service.BookmarkService;
-import com.vijay.User_Master.service.TutorialCategoryService;
-import com.vijay.User_Master.service.TutorialService;
-import com.vijay.User_Master.service.UserProgressService;
+import com.vijay.User_Master.dto.UserResponse;
+import com.vijay.User_Master.repository.UserProgressRepository;
+import com.vijay.User_Master.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -28,6 +27,8 @@ public class TutorialViewController {
     private final TutorialService tutorialService;
     private final UserProgressService progressService;
     private final BookmarkService bookmarkService;
+    private final UserService userService;
+    private final UserProgressRepository progressRepository;
 
     @GetMapping
     public String home(Model model) {
@@ -103,6 +104,57 @@ public class TutorialViewController {
         model.addAttribute("query", query);
         model.addAttribute("title", "Search Results: " + query);
         return "tutorials/search";
+    }
+
+    @GetMapping("/dashboard")
+    public String dashboard(Model model) {
+        try {
+            UserResponse user = userService.getCurrentUser();
+            Long userId = user.getId();
+
+            // 1. Basic Stats
+            model.addAttribute("completedCount", progressService.getCompletedTutorialsCount(userId));
+            model.addAttribute("avgProgress", progressService.getAverageProgress(userId));
+            model.addAttribute("totalTime", progressService.getTotalTimeSpent(userId));
+
+            // 2. Recent Activity (Last 5 progress updates)
+            List<UserProgressDTO> recentActivity = progressRepository.findRecentProgressByUserId(userId).stream()
+                    .limit(5)
+                    .map(p -> UserProgressDTO.builder()
+                            .tutorialId(p.getTutorial().getId())
+                            .tutorialTitle(p.getTutorial().getTitle())
+                            .progressPercentage(p.getProgressPercentage())
+                            .lastAccessedAt(p.getLastAccessedAt())
+                            .isCompleted(p.isCompleted())
+                            .build())
+                    .toList();
+            model.addAttribute("recentActivity", recentActivity);
+
+            // 3. Category Progress
+            List<TutorialCategoryDTO> categories = categoryService.getActiveCategories();
+            model.addAttribute("categoryStats", categories.stream().map(cat -> {
+                long totalInCat = tutorialService.getTutorialsByCategory(cat.getId(), 0, 1000).getTotalElements();
+                long completedInCat = progressRepository.findByUserIdAndIsCompletedTrue(userId).stream()
+                        .filter(p -> p.getTutorial().getCategory().getId().equals(cat.getId()))
+                        .count();
+                
+                double percent = totalInCat > 0 ? (completedInCat * 100.0 / totalInCat) : 0;
+                
+                return new Object() {
+                    public String getName() { return cat.getName(); }
+                    public String getIcon() { return cat.getIcon(); }
+                    public long getTotal() { return totalInCat; }
+                    public long getCompleted() { return completedInCat; }
+                    public int getPercentage() { return (int) percent; }
+                };
+            }).toList());
+
+            model.addAttribute("user", user);
+            model.addAttribute("title", "Learning Dashboard");
+        } catch (Exception e) {
+            return "redirect:/login";
+        }
+        return "tutorials/dashboard";
     }
 }
 
