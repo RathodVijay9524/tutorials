@@ -233,10 +233,52 @@
         <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs/loader.js"></script>
 
         <script th:inline="javascript">
-            // Render Markdown
+            // Render content - supports both new JSON blocks and legacy markdown
             const contentEl = document.getElementById('tutorial-content');
-            const rawMarkdown = contentEl.textContent || contentEl.innerText;
-            contentEl.innerHTML = marked.parse(rawMarkdown);
+            const rawContent = contentEl.textContent || contentEl.innerText;
+
+            function renderBlockContent(blocksJson) {
+                let html = '';
+                blocksJson.forEach(block => {
+                    if (block.type === 'text') {
+                        html += `<div class="content-block-text">${block.content}</div>`;
+                    } else if (block.type === 'code') {
+                        const lang = block.meta?.language || 'java';
+                        const filename = block.meta?.filename ? `<div class="code-filename"><i class="fas fa-file-code me-2"></i>${block.meta.filename}</div>` : '';
+                        const escapedCode = block.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        html += `<div class="code-block-container">${filename}<pre><code class="language-${lang}">${escapedCode}</code></pre></div>`;
+                    } else if (block.type === 'image') {
+                        const caption = block.meta?.caption ? `<figcaption class="text-muted small text-center mt-2">${block.meta.caption}</figcaption>` : '';
+                        html += `<figure class="content-image my-4"><img src="${block.content}" alt="${block.meta?.caption || ''}" class="img-fluid rounded">${caption}</figure>`;
+                    } else if (block.type === 'note' || block.type === 'tip' || block.type === 'warning') {
+                        const icons = { note: 'info-circle', tip: 'lightbulb', warning: 'exclamation-triangle' };
+                        const colors = { note: 'info', tip: 'success', warning: 'danger' };
+                        const titles = { note: 'Note', tip: 'Tip', warning: 'Warning' };
+                        html += `
+                            <div class="alert alert-${colors[block.type]} d-flex align-items-start my-4">
+                                <i class="fas fa-${icons[block.type]} me-3 mt-1"></i>
+                                <div>
+                                    <strong class="d-block mb-1">${titles[block.type]}</strong>
+                                    ${block.content}
+                                </div>
+                            </div>`;
+                    }
+                });
+                return html;
+            }
+
+            try {
+                const parsed = JSON.parse(rawContent);
+                if (Array.isArray(parsed)) {
+                    contentEl.innerHTML = renderBlockContent(parsed);
+                } else {
+                    // Fallback to markdown
+                    contentEl.innerHTML = marked.parse(rawContent);
+                }
+            } catch (e) {
+                // Legacy markdown content
+                contentEl.innerHTML = marked.parse(rawContent);
+            }
 
             // Initialize Monaco Editor
             const defaultCode = [[${ tutorial.codeExample }]] || 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, Java!");\n    }\n}';
