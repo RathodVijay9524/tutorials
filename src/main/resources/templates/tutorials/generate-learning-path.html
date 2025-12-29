@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{tutorials/layout}">
+
+<head>
+    <title>Generate Learning Path - JavaMaster</title>
+    <link rel="stylesheet" th:href="@{/css/learning-paths.css}">
+    <style>
+        .generate-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .category-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .category-checkbox:hover {
+            border-color: var(--primary-color);
+            background: rgba(0, 132, 255, 0.05);
+        }
+
+        .category-checkbox input[type="checkbox"] {
+            margin-right: 0.75rem;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-content {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="generate-container">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <div class="ai-badge">
+                    <i class="fas fa-robot"></i>
+                    <span>AI-Powered Learning Path Generator</span>
+                </div>
+                <h1 class="display-5 mb-3">Create Your Personalized Learning Path</h1>
+                <p class="lead text-muted">Tell us your learning goal, and our AI will create a customized learning
+                    path based on your current progress and skill level.</p>
+            </div>
+
+            <!-- Generation Form -->
+            <div class="form-card">
+                <form id="generate-form">
+                    <!-- Learning Goal -->
+                    <div class="mb-4">
+                        <label for="goal" class="form-label fw-bold">
+                            <i class="fas fa-bullseye me-2 text-primary"></i>What do you want to learn?
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="goal" name="goal"
+                            placeholder="e.g., Build a REST API, Master Java Collections, Learn Spring Boot"
+                            required>
+                        <small class="text-muted">Describe your learning goal in a few words</small>
+                    </div>
+
+                    <!-- Difficulty Level -->
+                    <div class="mb-4">
+                        <label for="difficultyLevel" class="form-label fw-bold">
+                            <i class="fas fa-chart-line me-2 text-primary"></i>Difficulty Level
+                        </label>
+                        <select class="form-select form-select-lg" id="difficultyLevel" name="difficultyLevel">
+                            <option value="">Auto-detect (Recommended)</option>
+                            <option value="BEGINNER">Beginner</option>
+                            <option value="INTERMEDIATE">Intermediate</option>
+                            <option value="ADVANCED">Advanced</option>
+                        </select>
+                        <small class="text-muted">Leave as "Auto-detect" to let AI determine based on your progress</small>
+                    </div>
+
+                    <!-- Number of Tutorials -->
+                    <div class="mb-4">
+                        <label for="maxTutorials" class="form-label fw-bold">
+                            <i class="fas fa-list-ol me-2 text-primary"></i>Number of Tutorials
+                        </label>
+                        <input type="number" class="form-control form-control-lg" id="maxTutorials" name="maxTutorials"
+                            min="3" max="20" value="10">
+                        <small class="text-muted">How many tutorials should be in your learning path? (3-20)</small>
+                    </div>
+
+                    <!-- Preferred Categories -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-folder me-2 text-primary"></i>Preferred Categories (Optional)
+                        </label>
+                        <p class="text-muted small mb-3">Select categories you're most interested in. Leave empty to
+                            include all categories.</p>
+                        <div id="categories-container">
+                            <div th:each="category : ${categories}" class="category-checkbox">
+                                <input type="checkbox" class="form-check-input" name="preferredCategoryIds"
+                                    th:value="${category.id}" th:id="'cat-' + ${category.id}">
+                                <label th:for="'cat-' + ${category.id}" class="form-check-label mb-0 flex-grow-1"
+                                    style="cursor: pointer;">
+                                    <i th:class="${category.icon != null ? category.icon : 'fas fa-folder'} + ' me-2'"></i>
+                                    <span th:text="${category.name}">Category Name</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estimated Hours -->
+                    <div class="mb-4">
+                        <label for="estimatedHours" class="form-label fw-bold">
+                            <i class="fas fa-clock me-2 text-primary"></i>Estimated Learning Time (Optional)
+                        </label>
+                        <input type="number" class="form-control form-control-lg" id="estimatedHours"
+                            name="estimatedHours" min="1" max="100" placeholder="e.g., 20">
+                        <small class="text-muted">How many hours do you want to spend? (Optional)</small>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3 hover-glow">
+                            <i class="fas fa-magic me-2"></i>Generate My Learning Path
+                        </button>
+                        <p class="text-center text-muted small mt-3 mb-0">
+                            <i class="fas fa-lightbulb me-1"></i>Our AI will analyze your progress and create the perfect path for you
+                        </p>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Info Card -->
+            <div class="form-card mt-4">
+                <h3 class="h5 mb-3">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>How It Works
+                </h3>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Analyzes Your Progress:</strong> Reviews your completed tutorials and current skill level
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Smart Selection:</strong> Chooses tutorials that match your goal and difficulty level
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Logical Ordering:</strong> Arranges tutorials from basics to advanced concepts
+                    </li>
+                    <li class="mb-0">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>Personalized:</strong> Creates a path unique to your learning journey
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-content">
+                <div class="spinner spinner-fast"></div>
+                <h3 class="h4 mb-2">Generating Your Learning Path</h3>
+                <p class="text-muted mb-0">Our AI is analyzing your progress and creating a personalized path...</p>
+                <div class="mt-3">
+                    <div class="progress" style="height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;">
+                        <div class="progress-bar bg-light" role="progressbar" style="width: 0%; animation: progressBar 3s ease-in-out infinite;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/learning-paths.js}"></script>
+    <script th:inline="javascript">
+        // Form is now handled by learning-paths.js
+        // This is a fallback if JS file doesn't load
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('generate-form');
+            if (form && !window.LearningPaths) {
+                form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const goal = formData.get('goal');
+            const difficultyLevel = formData.get('difficultyLevel') || null;
+            const maxTutorials = parseInt(formData.get('maxTutorials')) || 10;
+            const estimatedHours = formData.get('estimatedHours') ? parseInt(formData.get('estimatedHours')) : null;
+
+            // Get selected categories
+            const selectedCategories = Array.from(document.querySelectorAll('input[name="preferredCategoryIds"]:checked'))
+                .map(cb => parseInt(cb.value));
+
+            const requestData = {
+                goal: goal,
+                difficultyLevel: difficultyLevel,
+                maxTutorials: maxTutorials,
+                preferredCategoryIds: selectedCategories.length > 0 ? selectedCategories : null,
+                estimatedHours: estimatedHours
+            };
+
+            // Show loading
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            try {
+                const response = await fetch('/api/v1/learning-paths/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success' && data.data) {
+                    const pathId = data.data.recommendedPath.id;
+                    // Redirect to the generated path
+                    window.location.href = `/tutorials/learning-paths/${pathId}`;
+                } else {
+                    alert(data.message || 'Failed to generate learning path. Please try again.');
+                    document.getElementById('loading-overlay').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Generation error:', error);
+                alert('Please login to generate learning paths');
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
+

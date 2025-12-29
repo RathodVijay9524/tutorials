@@ -19,6 +19,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -187,6 +190,119 @@ public class TutorialService {
         log.info("Deleted tutorial: {}", tutorial.getTitle());
     }
 
+    @Transactional(readOnly = true)
+    public byte[] exportTutorialAsPdf(Long id) {
+        Tutorial tutorial = tutorialRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tutorial not found with id: " + id));
+        
+        try {
+            // Build HTML content for PDF
+            StringBuilder html = new StringBuilder();
+            html.append("<!DOCTYPE html><html><head>");
+            html.append("<meta charset='UTF-8'>");
+            html.append("<style>");
+            html.append("body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; color: #333; }");
+            html.append("h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }");
+            html.append("h2 { color: #34495e; margin-top: 30px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; }");
+            html.append("h3 { color: #7f8c8d; margin-top: 20px; }");
+            html.append("pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 4px solid #3498db; }");
+            html.append("code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; }");
+            html.append("p { margin-bottom: 15px; }");
+            html.append(".meta { color: #7f8c8d; font-size: 0.9em; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #ecf0f1; }");
+            html.append(".meta span { margin-right: 20px; }");
+            html.append("</style>");
+            html.append("</head><body>");
+            
+            // Title
+            html.append("<h1>").append(escapeHtml(tutorial.getTitle())).append("</h1>");
+            
+            // Meta information
+            html.append("<div class='meta'>");
+            if (tutorial.getAuthor() != null) {
+                html.append("<span><strong>Author:</strong> ").append(escapeHtml(tutorial.getAuthor().getName())).append("</span>");
+            }
+            html.append("<span><strong>Category:</strong> ").append(escapeHtml(tutorial.getCategory() != null ? tutorial.getCategory().getName() : "N/A")).append("</span>");
+            html.append("<span><strong>Difficulty:</strong> ").append(escapeHtml(tutorial.getDifficulty() != null ? tutorial.getDifficulty().toString() : "N/A")).append("</span>");
+            if (tutorial.getEstimatedMinutes() != null) {
+                html.append("<span><strong>Reading Time:</strong> ").append(tutorial.getEstimatedMinutes()).append(" minutes</span>");
+            }
+            html.append("</div>");
+            
+            // Content - convert markdown to HTML (basic conversion)
+            String content = tutorial.getContent();
+            if (content != null && !content.isEmpty()) {
+                // Basic markdown to HTML conversion for PDF
+                content = convertMarkdownToHtml(content);
+                html.append("<div>").append(content).append("</div>");
+            }
+            
+            // Code example
+            if (tutorial.getCodeExample() != null && !tutorial.getCodeExample().isEmpty()) {
+                html.append("<h2>Code Example</h2>");
+                html.append("<pre><code>").append(escapeHtml(tutorial.getCodeExample())).append("</code></pre>");
+            }
+            
+            html.append("</body></html>");
+            
+            // Generate PDF using openhtmltopdf
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.withHtmlContent(html.toString(), null);
+            builder.toStream(outputStream);
+            builder.run();
+            
+            log.info("Generated PDF for tutorial: {}", tutorial.getTitle());
+            return outputStream.toByteArray();
+            
+        } catch (Exception e) {
+            log.error("Error generating PDF for tutorial ID: {}", id, e);
+            throw new RuntimeException("Failed to generate PDF: " + e.getMessage(), e);
+        }
+    }
+    
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;");
+    }
+    
+    private String convertMarkdownToHtml(String markdown) {
+        if (markdown == null || markdown.isEmpty()) return "";
+        
+        // Basic markdown to HTML conversion
+        String html = markdown;
+        
+        // Headers
+        html = html.replaceAll("(?m)^### (.*)$", "<h3>$1</h3>");
+        html = html.replaceAll("(?m)^## (.*)$", "<h2>$1</h2>");
+        html = html.replaceAll("(?m)^# (.*)$", "<h1>$1</h1>");
+        
+        // Bold
+        html = html.replaceAll("\\*\\*(.*?)\\*\\*", "<strong>$1</strong>");
+        html = html.replaceAll("__(.*?)__", "<strong>$1</strong>");
+        
+        // Italic
+        html = html.replaceAll("\\*(.*?)\\*", "<em>$1</em>");
+        html = html.replaceAll("_(.*?)_", "<em>$1</em>");
+        
+        // Code blocks
+        html = html.replaceAll("(?s)```([\\w]*)\\n(.*?)```", "<pre><code>$2</code></pre>");
+        
+        // Inline code
+        html = html.replaceAll("`([^`]+)`", "<code>$1</code>");
+        
+        // Paragraphs (lines that don't start with HTML tags)
+        html = html.replaceAll("(?m)^(?!<[h|p|u|o|d|t|s|/])(.+)$", "<p>$1</p>");
+        
+        // Line breaks
+        html = html.replaceAll("\\n", "<br>");
+        
+        return html;
+    }
+
     private TutorialDTO convertToDTO(Tutorial tutorial) {
         TutorialDTO dto = new TutorialDTO();
         dto.setId(tutorial.getId());
@@ -261,3 +377,4 @@ public class TutorialService {
         return tutorial;
     }
 }
+

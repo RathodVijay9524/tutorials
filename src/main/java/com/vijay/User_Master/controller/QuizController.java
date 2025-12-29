@@ -116,6 +116,22 @@ public class QuizController {
     }
 
     /**
+     * Update quiz attempt time remaining
+     */
+    @PutMapping("/attempts/{attemptId}/time")
+    public ResponseEntity<QuizAttemptDTO> updateTimeRemaining(
+            @PathVariable Long attemptId,
+            @RequestParam Integer timeRemainingSeconds) {
+        try {
+            QuizAttemptDTO updated = quizService.updateTimeRemaining(attemptId, timeRemainingSeconds);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            log.error("Error updating time: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
      * Temporary seed endpoint for testing
      */
     @PostMapping("/seed")

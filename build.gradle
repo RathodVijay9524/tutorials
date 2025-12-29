@@ -52,6 +52,10 @@ dependencies {
 	implementation 'org.webjars:jquery:3.6.4'
 	// OpenAPI/Swagger UI for API documentation (2.7.0 is compatible with Spring Boot 3.4.x)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+	// PDF Generation - Using Apache PDFBox with Flying Saucer
+    // PDF Generation
+    implementation 'io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.24'
+    implementation 'io.github.openhtmltopdf:openhtmltopdf-slf4j:1.1.24'
 }
 
 tasks.named('test') {

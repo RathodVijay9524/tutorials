@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -75,14 +76,23 @@ public class QuizService {
             return convertAttemptToDTO(existingAttempt, false);
         }
         
-        // Create new attempt
+        // Create new attempt with time limit
+        Integer timeLimitSeconds = null;
+        if (quiz.getTimeLimitMinutes() != null && quiz.getTimeLimitMinutes() > 0) {
+            timeLimitSeconds = quiz.getTimeLimitMinutes() * 60;
+        }
+        
         QuizAttempt attempt = QuizAttempt.builder()
                 .user(user)
                 .quiz(quiz)
+                .timeLimitSeconds(timeLimitSeconds)
+                .timeRemainingSeconds(timeLimitSeconds)
+                .timeSpentSeconds(0)
                 .build();
         
         attempt = attemptRepository.save(attempt);
-        log.info("User {} started quiz attempt {} for quiz {}", user.getUsername(), attempt.getId(), quizId);
+        log.info("User {} started quiz attempt {} for quiz {} with time limit {} seconds", 
+                user.getUsername(), attempt.getId(), quizId, timeLimitSeconds);
         
         return convertAttemptToDTO(attempt, false);
     }
@@ -148,12 +158,24 @@ public class QuizService {
         attempt.getResponses().clear();
         attempt.getResponses().addAll(responses);
         
+        // Calculate time spent
+        if (attempt.getStartedAt() != null) {
+            long secondsSpent = java.time.Duration.between(attempt.getStartedAt(), LocalDateTime.now()).getSeconds();
+            attempt.setTimeSpentSeconds((int) secondsSpent);
+            
+            // Update time remaining if time limit exists
+            if (attempt.getTimeLimitSeconds() != null) {
+                int remaining = attempt.getTimeLimitSeconds() - attempt.getTimeSpentSeconds();
+                attempt.setTimeRemainingSeconds(Math.max(0, remaining));
+            }
+        }
+        
         // Complete the attempt
         attempt.completeAttempt(earnedScore, totalScore, quiz.getPassingScore());
         attempt = attemptRepository.save(attempt);
         
-        log.info("User {} completed quiz {} with score {}/{} ({}%)", 
-                user.getUsername(), quiz.getTitle(), earnedScore, totalScore, attempt.getPercentage());
+        log.info("User {} completed quiz {} with score {}/{} ({}%) in {} seconds", 
+                user.getUsername(), quiz.getTitle(), earnedScore, totalScore, attempt.getPercentage(), attempt.getTimeSpentSeconds());
         
         return convertAttemptToDTO(attempt, true);
     }
@@ -453,6 +475,9 @@ public class QuizService {
                 .isCompleted(attempt.isCompleted())
                 .startedAt(attempt.getStartedAt())
                 .completedAt(attempt.getCompletedAt())
+                .timeLimitSeconds(attempt.getTimeLimitSeconds())
+                .timeRemainingSeconds(attempt.getTimeRemainingSeconds())
+                .timeSpentSeconds(attempt.getTimeSpentSeconds())
                 .responses(responseDTOs)
                 .build();
     }
@@ -562,6 +587,35 @@ public class QuizService {
         ));
 
         log.info("Sample quiz seeded successfully for tutorial: {}", tutorial.getTitle());
+    }
+
+    /**
+     * Update time remaining for a quiz attempt
+     */
+    @Transactional
+    public QuizAttemptDTO updateTimeRemaining(Long attemptId, Integer timeRemainingSeconds) {
+        QuizAttempt attempt = attemptRepository.findById(attemptId)
+                .orElseThrow(() -> new RuntimeException("Attempt not found"));
+        
+        User user = getCurrentUser();
+        if (!attempt.getUser().getId().equals(user.getId())) {
+            throw new SecurityException("Cannot update another user's quiz attempt");
+        }
+        
+        if (attempt.isCompleted()) {
+            throw new IllegalStateException("Cannot update time for completed attempt");
+        }
+        
+        attempt.setTimeRemainingSeconds(timeRemainingSeconds);
+        
+        // Calculate time spent
+        if (attempt.getStartedAt() != null && attempt.getTimeLimitSeconds() != null) {
+            int timeSpent = attempt.getTimeLimitSeconds() - timeRemainingSeconds;
+            attempt.setTimeSpentSeconds(Math.max(0, timeSpent));
+        }
+        
+        attempt = attemptRepository.save(attempt);
+        return convertAttemptToDTO(attempt, false);
     }
 }
 

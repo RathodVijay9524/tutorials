@@ -19,17 +19,25 @@
             </ol>
         </nav>
 
-        <div class="row">
+        <div class="row g-4">
             <!-- Left: Tutorial Content -->
-            <div class="col-lg-7">
+            <div class="col-lg-8">
                 <div class="premium-card p-4 p-md-5 mb-4">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <h1 class="display-5 fw-bold mb-0" th:text="${tutorial.title}">Tutorial Title</h1>
-                        <button id="bookmark-btn" class="btn btn-outline-light btn-sm rounded-circle p-2"
-                            th:data-tutorial-id="${tutorial.id}" th:data-bookmarked="${isBookmarked}"
-                            title="Bookmark this tutorial">
-                            <i th:class="${isBookmarked ? 'fas fa-bookmark text-warning' : 'far fa-bookmark'}"></i>
-                        </button>
+                        <div class="d-flex gap-2">
+                            <a th:href="@{/api/v1/tutorials/{id}/export/pdf(id=${tutorial.id})}" 
+                               class="btn btn-outline-light btn-sm" 
+                               title="Download as PDF"
+                               download>
+                                <i class="fas fa-file-pdf me-1"></i> PDF
+                            </a>
+                            <button id="bookmark-btn" class="btn btn-outline-light btn-sm rounded-circle p-2"
+                                th:data-tutorial-id="${tutorial.id}" th:data-bookmarked="${isBookmarked}"
+                                title="Bookmark this tutorial">
+                                <i th:class="${isBookmarked ? 'fas fa-bookmark text-warning' : 'far fa-bookmark'}"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Star Rating Section -->
@@ -67,6 +75,30 @@
                                 class="fas fa-chevron-right ms-2"></i></button>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Right: Sticky Table of Contents -->
+            <div class="col-lg-4">
+                <div id="toc-sidebar" class="premium-card p-3 mb-4" style="position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-list me-2"></i>Table of Contents
+                        </h5>
+                        <button id="toc-toggle" class="btn btn-sm btn-outline-light d-lg-none">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <nav id="toc-nav" class="toc-nav">
+                        <p class="text-muted small mb-0">Loading...</p>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Sections Below (Full Width or Split) -->
+        <div class="row g-4">
+            <!-- Left Column: Reviews, Quiz, Discussion -->
+            <div class="col-lg-8">
 
                 <!-- Reviews Section -->
                 <div class="premium-card p-4 mb-4">
@@ -101,14 +133,28 @@
                     </div>
 
                     <div id="quiz-container" style="display: none;">
+                        <!-- Timer Alert -->
+                        <div id="timer-alert" class="alert alert-warning d-none mb-3" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Time Warning:</strong> <span id="timer-warning-text"></span>
+                        </div>
+                        
                         <div id="quiz-progress" class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span id="question-counter" class="small">Question 1 of 5</span>
-                                <span id="quiz-timer" class="small text-muted"></span>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span id="question-counter" class="small fw-bold">Question 1 of 5</span>
+                                    <span id="marked-count" class="small text-muted ms-2"></span>
+                                </div>
+                                <div id="timer-container" class="d-flex align-items-center">
+                                    <i class="fas fa-clock me-2 text-primary"></i>
+                                    <span id="quiz-timer" class="fw-bold fs-5" style="font-family: monospace;"></span>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 4px;">
+                            <div class="progress mb-2" style="height: 6px;">
                                 <div id="quiz-progress-bar" class="progress-bar bg-primary" style="width: 0%"></div>
                             </div>
+                            <!-- Question Navigator -->
+                            <div id="question-navigator" class="d-flex flex-wrap gap-1 mb-2" style="max-height: 80px; overflow-y: auto;"></div>
                         </div>
 
                         <div id="question-card" class="mb-4">
@@ -192,10 +238,10 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Right: Interactive Code Block -->
-            <div class="col-lg-5">
-                <div class="premium-card sticky-top" style="top: 100px;">
+            
+            <!-- Right Column: Interactive Code Block -->
+            <div class="col-lg-4">
+                <div class="premium-card sticky-top" style="top: 20px;">
                     <div
                         class="bg-dark p-2 d-flex justify-content-between align-items-center border-bottom border-white border-opacity-10">
                         <span class="small fw-bold px-2"><i class="fab fa-java text-primary me-2"></i>Interactive
@@ -279,6 +325,9 @@
                 // Legacy markdown content
                 contentEl.innerHTML = marked.parse(rawContent);
             }
+            
+            // Generate Table of Contents after content is rendered
+            setTimeout(() => generateTableOfContents(), 100);
 
             // Initialize Monaco Editor
             const defaultCode = [[${ tutorial.codeExample }]] || 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, Java!");\n    }\n}';
@@ -336,6 +385,106 @@
             document.getElementById('reset-btn').addEventListener('click', () => {
                 window.editor.setValue(defaultCode);
             });
+
+            // ========== TABLE OF CONTENTS ==========
+            function generateTableOfContents() {
+                const contentEl = document.getElementById('tutorial-content');
+                const tocNav = document.getElementById('toc-nav');
+                
+                if (!contentEl || !tocNav) return;
+                
+                // Find all headings (h2, h3, h4)
+                const headings = contentEl.querySelectorAll('h2, h3, h4');
+                
+                if (headings.length === 0) {
+                    tocNav.innerHTML = '<p class="text-muted small mb-0">No headings found in this tutorial.</p>';
+                    return;
+                }
+                
+                let tocHTML = '<ul>';
+                let tocItems = [];
+                
+                headings.forEach((heading, index) => {
+                    // Generate ID if doesn't exist
+                    let id = heading.id;
+                    if (!id) {
+                        id = 'heading-' + index + '-' + heading.textContent.toLowerCase()
+                            .replace(/[^a-z0-9]+/g, '-')
+                            .replace(/^-|-$/g, '');
+                        heading.id = id;
+                    }
+                    
+                    // Add smooth scroll anchor
+                    heading.style.scrollMarginTop = '80px';
+                    
+                    const level = parseInt(heading.tagName.charAt(1));
+                    const text = heading.textContent.trim();
+                    const tocClass = `toc-h${level}`;
+                    
+                    tocItems.push({ id, text, level, element: heading });
+                    
+                    tocHTML += `<li class="${tocClass}">
+                        <a href="#${id}" data-heading-id="${id}" onclick="scrollToHeading('${id}'); return false;">
+                            ${text}
+                        </a>
+                    </li>`;
+                });
+                
+                tocHTML += '</ul>';
+                tocNav.innerHTML = tocHTML;
+                
+                // Set up active section highlighting
+                setupActiveSectionHighlighting(tocItems);
+            }
+
+            function scrollToHeading(id) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                    
+                    // Update active state immediately
+                    updateActiveTocItem(id);
+                }
+            }
+
+            function setupActiveSectionHighlighting(headings) {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '-20% 0px -60% 0px',
+                    threshold: 0
+                };
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            updateActiveTocItem(entry.target.id);
+                        }
+                    });
+                }, observerOptions);
+                
+                headings.forEach(item => {
+                    if (item.element) {
+                        observer.observe(item.element);
+                    }
+                });
+            }
+
+            function updateActiveTocItem(activeId) {
+                const tocLinks = document.querySelectorAll('#toc-nav a');
+                tocLinks.forEach(link => {
+                    if (link.getAttribute('data-heading-id') === activeId) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+
+            // Make scrollToHeading available globally
+            window.scrollToHeading = scrollToHeading;
         </script>
 
         <style>
@@ -363,6 +512,85 @@
                 padding: 1rem;
                 border-radius: 0.5rem;
                 border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            /* Table of Contents Styles */
+            .toc-nav {
+                font-size: 0.9rem;
+            }
+
+            .toc-nav ul {
+                list-style: none;
+                padding-left: 0;
+                margin: 0;
+            }
+
+            .toc-nav li {
+                margin-bottom: 0.5rem;
+            }
+
+            .toc-nav a {
+                color: var(--text-muted);
+                text-decoration: none;
+                display: block;
+                padding: 0.25rem 0.5rem;
+                border-radius: 0.25rem;
+                transition: all 0.2s ease;
+                border-left: 3px solid transparent;
+            }
+
+            .toc-nav a:hover {
+                color: var(--primary-color);
+                background: rgba(0, 132, 255, 0.1);
+                border-left-color: var(--primary-color);
+                padding-left: 0.75rem;
+            }
+
+            .toc-nav a.active {
+                color: var(--primary-color);
+                background: rgba(0, 132, 255, 0.15);
+                border-left-color: var(--primary-color);
+                font-weight: 600;
+                padding-left: 0.75rem;
+            }
+
+            .toc-nav .toc-h2 {
+                padding-left: 0.5rem;
+                font-weight: 500;
+            }
+
+            .toc-nav .toc-h3 {
+                padding-left: 1.5rem;
+                font-size: 0.85rem;
+                color: var(--text-muted);
+            }
+
+            .toc-nav .toc-h4 {
+                padding-left: 2.5rem;
+                font-size: 0.8rem;
+                color: var(--text-muted);
+            }
+
+            #toc-sidebar {
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+            }
+
+            #toc-sidebar::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            #toc-sidebar::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            #toc-sidebar::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 3px;
+            }
+
+            #toc-sidebar::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.3);
             }
 
             /* Star Rating Styles */
@@ -647,6 +875,12 @@
                 }
             }
 
+            // Quiz timer and navigation variables
+            let quizTimer = null;
+            let timeRemainingSeconds = null;
+            let markedQuestions = new Set();
+            let isReviewMode = false;
+
             // Start quiz
             startQuizBtn.addEventListener('click', async function () {
                 try {
@@ -656,8 +890,20 @@
                         attemptId = attempt.id;
                         currentQuestionIndex = 0;
                         userAnswers = {};
+                        markedQuestions.clear();
+                        isReviewMode = false;
+                        
+                        // Initialize timer if time limit exists
+                        if (attempt.timeLimitSeconds && attempt.timeLimitSeconds > 0) {
+                            timeRemainingSeconds = attempt.timeRemainingSeconds || attempt.timeLimitSeconds;
+                            startTimer();
+                        } else {
+                            document.getElementById('timer-container').style.display = 'none';
+                        }
+                        
                         showQuizContainer();
                         renderQuestion();
+                        renderQuestionNavigator();
                     } else {
                         alert('Please login to take the quiz');
                     }
@@ -665,6 +911,138 @@
                     alert('Error starting quiz');
                 }
             });
+
+            // Timer functionality
+            function startTimer() {
+                if (quizTimer) clearInterval(quizTimer);
+                
+                quizTimer = setInterval(() => {
+                    if (timeRemainingSeconds <= 0) {
+                        clearInterval(quizTimer);
+                        autoSubmitQuiz();
+                        return;
+                    }
+                    
+                    updateTimerDisplay();
+                    
+                    // Update backend every 30 seconds
+                    if (timeRemainingSeconds % 30 === 0) {
+                        updateTimeRemaining();
+                    }
+                    
+                    timeRemainingSeconds--;
+                }, 1000);
+                
+                updateTimerDisplay();
+            }
+
+            function updateTimerDisplay() {
+                const timerEl = document.getElementById('quiz-timer');
+                const alertEl = document.getElementById('timer-alert');
+                const warningText = document.getElementById('timer-warning-text');
+                
+                if (!timerEl) return;
+                
+                const minutes = Math.floor(timeRemainingSeconds / 60);
+                const seconds = timeRemainingSeconds % 60;
+                const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                timerEl.textContent = timeString;
+                
+                // Warning colors
+                if (timeRemainingSeconds <= 60) {
+                    timerEl.className = 'fw-bold fs-5 text-danger';
+                    alertEl.classList.remove('d-none');
+                    warningText.textContent = `Only ${timeRemainingSeconds} seconds remaining!`;
+                } else if (timeRemainingSeconds <= 300) {
+                    timerEl.className = 'fw-bold fs-5 text-warning';
+                    alertEl.classList.remove('d-none');
+                    warningText.textContent = `Less than 5 minutes remaining!`;
+                } else {
+                    timerEl.className = 'fw-bold fs-5 text-primary';
+                    alertEl.classList.add('d-none');
+                }
+            }
+
+            async function updateTimeRemaining() {
+                if (!attemptId) return;
+                try {
+                    await fetch(`/api/v1/quizzes/attempts/${attemptId}/time?timeRemainingSeconds=${timeRemainingSeconds}`, {
+                        method: 'PUT'
+                    });
+                } catch (error) {
+                    console.error('Failed to update time:', error);
+                }
+            }
+
+            async function autoSubmitQuiz() {
+                const submitBtn = document.getElementById('submit-quiz-btn');
+                if (submitBtn && !submitBtn.classList.contains('d-none')) {
+                    submitBtn.click();
+                } else {
+                    // Force submit even if not on last question
+                    await submitQuiz();
+                }
+            }
+
+            // Question Navigator
+            function renderQuestionNavigator() {
+                const navigator = document.getElementById('question-navigator');
+                if (!navigator) return;
+                
+                navigator.innerHTML = quizData.questions.map((q, index) => {
+                    const isAnswered = userAnswers[q.id] !== undefined;
+                    const isMarked = markedQuestions.has(q.id);
+                    const isCurrent = index === currentQuestionIndex;
+                    
+                    let classes = 'btn btn-sm';
+                    if (isCurrent) classes += ' btn-primary';
+                    else if (isAnswered) classes += ' btn-success';
+                    else if (isMarked) classes += ' btn-warning';
+                    else classes += ' btn-outline-secondary';
+                    
+                    return `<button class="${classes}" data-question-index="${index}" 
+                            onclick="navigateToQuestion(${index})" 
+                            title="Question ${index + 1}${isMarked ? ' (Marked)' : ''}">
+                            ${index + 1}${isMarked ? ' <i class="fas fa-bookmark"></i>' : ''}
+                            </button>`;
+                }).join('');
+            }
+
+            window.navigateToQuestion = function(index) {
+                if (index >= 0 && index < quizData.questions.length) {
+                    currentQuestionIndex = index;
+                    renderQuestion();
+                    renderQuestionNavigator();
+                }
+            };
+
+            // Mark for review
+            document.getElementById('mark-review-btn')?.addEventListener('click', function() {
+                const questionId = quizData.questions[currentQuestionIndex].id;
+                if (markedQuestions.has(questionId)) {
+                    markedQuestions.delete(questionId);
+                    this.classList.remove('btn-warning');
+                    this.classList.add('btn-outline-warning');
+                    this.innerHTML = '<i class="fas fa-bookmark me-1"></i> Mark for Review';
+                } else {
+                    markedQuestions.add(questionId);
+                    this.classList.remove('btn-outline-warning');
+                    this.classList.add('btn-warning');
+                    this.innerHTML = '<i class="fas fa-bookmark me-1"></i> Unmark';
+                }
+                renderQuestionNavigator();
+                updateMarkedCount();
+            });
+
+            function updateMarkedCount() {
+                const markedCountEl = document.getElementById('marked-count');
+                if (markedCountEl && markedQuestions.size > 0) {
+                    markedCountEl.textContent = `(${markedQuestions.size} marked for review)`;
+                } else if (markedCountEl) {
+                    markedCountEl.textContent = '';
+                }
+            }
 
             function showQuizContainer() {
                 quizIntro.style.display = 'none';
@@ -680,6 +1058,22 @@
                 document.getElementById('question-counter').textContent = `Question ${currentQuestionIndex + 1} of ${total}`;
                 document.getElementById('quiz-progress-bar').style.width = `${((currentQuestionIndex + 1) / total) * 100}%`;
                 document.getElementById('question-text').textContent = question.questionText;
+                
+                // Update mark review button
+                const markBtn = document.getElementById('mark-review-btn');
+                if (markBtn) {
+                    if (markedQuestions.has(question.id)) {
+                        markBtn.classList.remove('btn-outline-warning');
+                        markBtn.classList.add('btn-warning');
+                        markBtn.innerHTML = '<i class="fas fa-bookmark me-1"></i> Unmark';
+                    } else {
+                        markBtn.classList.remove('btn-warning');
+                        markBtn.classList.add('btn-outline-warning');
+                        markBtn.innerHTML = '<i class="fas fa-bookmark me-1"></i> Mark for Review';
+                    }
+                }
+                
+                updateMarkedCount();
 
                 // Code snippet
                 const codeEl = document.getElementById('question-code');
@@ -710,6 +1104,7 @@
                         this.querySelector('input').checked = true;
                         document.querySelectorAll('.option-item').forEach(i => i.classList.remove('selected'));
                         this.classList.add('selected');
+                        renderQuestionNavigator(); // Update navigator to show answered
                     });
                 });
 
@@ -728,6 +1123,7 @@
                 if (currentQuestionIndex > 0) {
                     currentQuestionIndex--;
                     renderQuestion();
+                    renderQuestionNavigator();
                 }
             });
 
@@ -735,10 +1131,21 @@
                 if (currentQuestionIndex < quizData.questions.length - 1) {
                     currentQuestionIndex++;
                     renderQuestion();
+                    renderQuestionNavigator();
                 }
             });
 
-            document.getElementById('submit-quiz-btn').addEventListener('click', async function () {
+            async function submitQuiz() {
+                if (quizTimer) {
+                    clearInterval(quizTimer);
+                    quizTimer = null;
+                }
+                
+                // Final time update
+                if (timeRemainingSeconds !== null && attemptId) {
+                    await updateTimeRemaining();
+                }
+                
                 try {
                     const response = await fetch(`/api/v1/quizzes/attempts/${attemptId}/submit`, {
                         method: 'POST',
@@ -749,11 +1156,15 @@
                     if (response.ok) {
                         attemptResult = await response.json();
                         showResult();
+                    } else {
+                        alert('Error submitting quiz');
                     }
                 } catch (error) {
                     alert('Error submitting quiz');
                 }
-            });
+            }
+
+            document.getElementById('submit-quiz-btn').addEventListener('click', submitQuiz);
 
             function showResult() {
                 quizContainer.style.display = 'none';

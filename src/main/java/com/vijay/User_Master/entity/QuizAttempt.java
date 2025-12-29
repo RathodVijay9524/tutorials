@@ -55,6 +55,15 @@ public class QuizAttempt {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(name = "time_limit_seconds")
+    private Integer timeLimitSeconds; // Time limit in seconds
+
+    @Column(name = "time_remaining_seconds")
+    private Integer timeRemainingSeconds; // Remaining time when paused/completed
+
+    @Column(name = "time_spent_seconds")
+    private Integer timeSpentSeconds; // Total time spent on quiz
+
     @OneToMany(mappedBy = "quizAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     @Builder.Default

@@ -6,7 +6,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -123,5 +125,29 @@ public class TutorialController {
     public ResponseEntity<Void> deleteTutorial(@PathVariable Long id) {
         tutorialService.deleteTutorial(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/export/pdf")
+    @Operation(summary = "Export tutorial as PDF", description = "Generate and download a PDF version of the tutorial")
+    public ResponseEntity<byte[]> exportTutorialAsPdf(@PathVariable Long id) {
+        try {
+            byte[] pdfBytes = tutorialService.exportTutorialAsPdf(id);
+            TutorialDTO tutorial = tutorialService.getTutorialById(id);
+            
+            String filename = tutorial.getSlug() != null 
+                ? tutorial.getSlug() + ".pdf" 
+                : "tutorial-" + id + ".pdf";
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentLength(pdfBytes.length);
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

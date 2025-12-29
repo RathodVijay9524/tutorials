@@ -286,6 +286,12 @@
                     </li>
 
                     <li class="nav-item">
+                        <a class="nav-link" th:href="@{/tutorials/learning-paths}">
+                            <i class="fas fa-route me-1"></i>Learning Paths
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
                         <a class="nav-link" th:href="@{/tutorials/playground}">Playground</a>
                     </li>
                     <li class="nav-item" sec:authorize="hasRole('ADMIN')">
@@ -344,6 +350,12 @@
                                 <a class="dropdown-item" th:href="@{/tutorials/dashboard}">
                                     <i class="fas fa-chart-line text-success"></i>
                                     <span>Dashboard</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" th:href="@{/tutorials/my-learning-paths}">
+                                    <i class="fas fa-route text-primary"></i>
+                                    <span>My Learning Paths</span>
                                 </a>
                             </li>
                             <li>

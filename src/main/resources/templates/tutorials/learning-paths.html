@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{tutorials/layout}">
+
+<head>
+    <title>Learning Paths - JavaMaster</title>
+    <link rel="stylesheet" th:href="@{/css/learning-paths.css}">
+    <style>
+        .path-card {
+            border: none;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            height: 100%;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .path-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 132, 255, 0.2);
+        }
+
+        .path-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .path-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .badge-beginner {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .badge-intermediate {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .badge-advanced {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .path-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .generate-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .generate-card h3 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .generate-card p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div layout:fragment="content" class="learning-paths-container page-transition">
+        <!-- Hero Section -->
+        <div class="row align-items-center mb-5" style="animation: fadeIn 0.6s ease-out;">
+            <div class="col-lg-8">
+                <h1 class="display-4 mb-3 fw-bold">Learning Paths</h1>
+                <p class="lead text-muted">Structured learning journeys designed to take you from beginner to expert.
+                    Follow curated paths or create your own personalized journey.</p>
+            </div>
+            <div class="col-lg-4 text-end">
+                <a th:href="@{/tutorials/learning-paths/generate}" class="btn btn-primary btn-lg rounded-pill px-4">
+                    <i class="fas fa-magic me-2"></i>Generate AI Path
+                </a>
+            </div>
+        </div>
+
+        <!-- Generate AI Path Card -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="generate-card hover-lift">
+                    <div style="position: relative; z-index: 1;">
+                        <i class="fas fa-robot fa-3x mb-3" style="animation: pulse 2s infinite;"></i>
+                        <h3>AI-Powered Learning Path Generator</h3>
+                        <p>Tell us your learning goal, and we'll create a personalized learning path tailored to your
+                            current skill level and progress.</p>
+                        <a th:href="@{/tutorials/learning-paths/generate}" class="btn btn-light btn-lg rounded-pill px-4 hover-glow">
+                            <i class="fas fa-sparkles me-2"></i>Create My Path
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Learning Paths -->
+        <div th:if="${featured != null && !featured.empty}" class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h3">
+                    <i class="fas fa-star text-warning me-2"></i>Featured Paths
+                </h2>
+            </div>
+            <div class="row g-4" id="featured-paths">
+                <div th:each="path : ${featured}" class="col-md-6 col-lg-4">
+                    <div class="path-card">
+                        <div class="path-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <h3 class="h5 mb-2" th:text="${path.name}">Path Name</h3>
+                        <p class="text-muted small mb-3" th:text="${path.description}">Path description</p>
+                        <div class="mb-3">
+                            <span th:class="'path-badge badge-' + ${path.difficultyLevel?.toLowerCase()}"
+                                th:text="${path.difficultyLevel}">BEGINNER</span>
+                            <span class="text-muted small" th:text="${path.estimatedHours + ' hours'}">10 hours</span>
+                        </div>
+                        <div class="path-stats">
+                            <span><i class="fas fa-users me-1"></i><span th:text="${path.enrollmentCount}">0</span>
+                                enrolled</span>
+                            <span><i class="fas fa-star me-1"></i><span
+                                    th:text="${path.averageRating != null ? #numbers.formatDecimal(path.averageRating, 1, 1) : '0.0'}">4.5</span></span>
+                        </div>
+                        <div class="mt-3">
+                            <a th:href="@{/tutorials/learning-paths/{id}(id=${path.id})}"
+                                class="btn btn-primary btn-sm rounded-pill">
+                                View Path <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="card mb-4" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control bg-dark border-secondary text-light" 
+                                   id="search-input" placeholder="Search learning paths...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Difficulty</label>
+                        <select class="form-select bg-dark border-secondary text-light" id="difficulty-filter">
+                            <option value="">All Levels</option>
+                            <option value="BEGINNER">Beginner</option>
+                            <option value="INTERMEDIATE">Intermediate</option>
+                            <option value="ADVANCED">Advanced</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Sort By</label>
+                        <select class="form-select bg-dark border-secondary text-light" id="sort-by">
+                            <option value="createdAt">Newest</option>
+                            <option value="name">Name</option>
+                            <option value="enrollmentCount">Most Popular</option>
+                            <option value="averageRating">Highest Rated</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-outline-secondary w-100" id="clear-filters">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3" id="active-filters" style="display: none;">
+                    <small class="text-muted">Active filters: </small>
+                    <span id="filter-badges"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Learning Paths -->
+        <div class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h3">All Learning Paths</h2>
+                <a th:href="@{/tutorials/my-learning-paths}" class="text-primary text-decoration-none">
+                    My Paths <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+            <div class="row g-4" id="all-paths">
+                <div th:each="path : ${paths}" class="col-md-6 col-lg-4">
+                    <div class="path-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="path-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <span th:if="${path.isAiGenerated}" class="badge bg-info">
+                                <i class="fas fa-robot me-1"></i>AI Generated
+                            </span>
+                        </div>
+                        <h3 class="h5 mb-2" th:text="${path.name}">Path Name</h3>
+                        <p class="text-muted small mb-3" th:text="${path.description}">Path description</p>
+                        <div class="mb-3">
+                            <span th:if="${path.goal != null}" class="text-muted small d-block mb-1">
+                                <i class="fas fa-bullseye me-1"></i><span th:text="${path.goal}">Goal</span>
+                            </span>
+                            <span th:class="'path-badge badge-' + ${path.difficultyLevel?.toLowerCase()}"
+                                th:text="${path.difficultyLevel}">BEGINNER</span>
+                            <span class="text-muted small" th:text="${path.estimatedHours + ' hours'}">10 hours</span>
+                        </div>
+                        <div class="path-stats">
+                            <span><i class="fas fa-users me-1"></i><span th:text="${path.enrollmentCount}">0</span>
+                                enrolled</span>
+                            <span><i class="fas fa-check-circle me-1"></i><span
+                                    th:text="${path.completionCount}">0</span> completed</span>
+                            <span th:if="${path.averageRating != null && path.averageRating > 0}">
+                                <i class="fas fa-star text-warning me-1"></i>
+                                <span th:text="${#numbers.formatDecimal(path.averageRating, 1, 1)}">0.0</span>
+                                <span class="text-muted small" th:text="'(' + ${path.ratingCount} + ')'">(0)</span>
+                            </span>
+                        </div>
+                        <div class="mt-3">
+                            <a th:href="@{/tutorials/learning-paths/{id}(id=${path.id})}"
+                                class="btn btn-primary btn-sm rounded-pill">
+                                View Path <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${paths == null || paths.empty}" class="col-12 text-center py-5">
+                    <div class="p-5 premium-card glass-effect">
+                        <i class="fas fa-route fa-3x text-muted mb-3"></i>
+                        <h3 class="h4 mb-2">No Learning Paths Yet</h3>
+                        <p class="text-muted mb-4">Be the first to create a learning path or generate one with AI!</p>
+                        <a th:href="@{/tutorials/learning-paths/generate}" class="btn btn-primary rounded-pill">
+                            <i class="fas fa-magic me-2"></i>Generate AI Path
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/learning-paths.js}"></script>
+    <script th:inline="javascript">
+        // Search and Filter functionality
+        let searchTimeout;
+        const searchInput = document.getElementById('search-input');
+        const difficultyFilter = document.getElementById('difficulty-filter');
+        const sortBy = document.getElementById('sort-by');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        const allPathsContainer = document.getElementById('all-paths');
+        const activeFiltersDiv = document.getElementById('active-filters');
+        const filterBadgesDiv = document.getElementById('filter-badges');
+
+        let currentFilters = {
+            keyword: '',
+            difficulty: '',
+            sortBy: 'createdAt',
+            sortDir: 'desc',
+            page: 0,
+            size: 12
+        };
+
+        function updateActiveFilters() {
+            const badges = [];
+            if (currentFilters.keyword) {
+                badges.push(`<span class="badge bg-primary me-2">Search: ${currentFilters.keyword} <button class="btn-close btn-close-white ms-1" onclick="clearSearch()" style="font-size: 0.6rem;"></button></span>`);
+            }
+            if (currentFilters.difficulty) {
+                badges.push(`<span class="badge bg-info me-2">${currentFilters.difficulty} <button class="btn-close btn-close-white ms-1" onclick="clearDifficulty()" style="font-size: 0.6rem;"></button></span>`);
+            }
+            filterBadgesDiv.innerHTML = badges.join('');
+            activeFiltersDiv.style.display = badges.length > 0 ? 'block' : 'none';
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            currentFilters.keyword = '';
+            loadPaths();
+        }
+
+        function clearDifficulty() {
+            difficultyFilter.value = '';
+            currentFilters.difficulty = '';
+            loadPaths();
+        }
+
+        async function loadPaths() {
+            try {
+                const params = new URLSearchParams({
+                    page: currentFilters.page,
+                    size: currentFilters.size,
+                    sortBy: currentFilters.sortBy,
+                    sortDir: currentFilters.sortDir
+                });
+                
+                if (currentFilters.keyword) params.append('keyword', currentFilters.keyword);
+                if (currentFilters.difficulty) params.append('difficulty', currentFilters.difficulty);
+
+                const response = await fetch(`/api/v1/learning-paths?${params}`);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.data) {
+                    renderPaths(data.data.content || data.data);
+                }
+            } catch (error) {
+                console.error('Error loading paths:', error);
+                showToast('Failed to load learning paths', 'error');
+            }
+        }
+
+        function renderPaths(paths) {
+            if (!paths || paths.length === 0) {
+                allPathsContainer.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <div class="p-5 premium-card glass-effect">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h3 class="h4 mb-2">No Learning Paths Found</h3>
+                            <p class="text-muted mb-4">Try adjusting your search or filters</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            allPathsContainer.innerHTML = paths.map(path => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="path-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="path-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            ${path.isAiGenerated ? '<span class="badge bg-info"><i class="fas fa-robot me-1"></i>AI Generated</span>' : ''}
+                        </div>
+                        <h3 class="h5 mb-2">${path.name || 'Untitled Path'}</h3>
+                        <p class="text-muted small mb-3">${path.description || 'No description'}</p>
+                        <div class="mb-3">
+                            ${path.goal ? `<span class="text-muted small d-block mb-1"><i class="fas fa-bullseye me-1"></i>${path.goal}</span>` : ''}
+                            <span class="path-badge badge-${(path.difficultyLevel || '').toLowerCase()}">${path.difficultyLevel || 'N/A'}</span>
+                            <span class="text-muted small">${path.estimatedHours || 0} hours</span>
+                        </div>
+                        <div class="path-stats">
+                            <span><i class="fas fa-users me-1"></i>${path.enrollmentCount || 0} enrolled</span>
+                            <span><i class="fas fa-check-circle me-1"></i>${path.completionCount || 0} completed</span>
+                            ${path.averageRating > 0 ? `<span><i class="fas fa-star text-warning me-1"></i>${path.averageRating.toFixed(1)} (${path.ratingCount || 0})</span>` : ''}
+                        </div>
+                        <div class="mt-3">
+                            <a href="/tutorials/learning-paths/${path.id}" class="btn btn-primary btn-sm rounded-pill">
+                                View Path <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentFilters.keyword = e.target.value.trim();
+                currentFilters.page = 0;
+                updateActiveFilters();
+                loadPaths();
+            }, 500);
+        });
+
+        difficultyFilter.addEventListener('change', (e) => {
+            currentFilters.difficulty = e.target.value;
+            currentFilters.page = 0;
+            updateActiveFilters();
+            loadPaths();
+        });
+
+        sortBy.addEventListener('change', (e) => {
+            currentFilters.sortBy = e.target.value;
+            currentFilters.sortDir = e.target.value === 'name' ? 'asc' : 'desc';
+            loadPaths();
+        });
+
+        clearFiltersBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            difficultyFilter.value = '';
+            sortBy.value = 'createdAt';
+            currentFilters = {
+                keyword: '',
+                difficulty: '',
+                sortBy: 'createdAt',
+                sortDir: 'desc',
+                page: 0,
+                size: 12
+            };
+            updateActiveFilters();
+            loadPaths();
+        });
+
+        // Load recommended paths dynamically
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('/api/v1/learning-paths/recommended');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        console.log('Recommended paths:', data.data);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+            }
+        });
+    </script>
+</body>
+
+</html>
+

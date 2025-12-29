@@ -4,6 +4,7 @@ import com.vijay.User_Master.dto.tutorial.*;
 import com.vijay.User_Master.dto.UserResponse;
 import com.vijay.User_Master.repository.UserProgressRepository;
 import com.vijay.User_Master.service.*;
+import com.vijay.User_Master.service.LearningPathService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -27,6 +28,7 @@ public class TutorialViewController {
     private final UserService userService;
     private final UserProgressRepository progressRepository;
     private final CourseService courseService;
+    private final LearningPathService learningPathService;
 
     @GetMapping
     public String home(Model model) {
@@ -182,6 +184,59 @@ public class TutorialViewController {
         model.addAttribute("lesson", lesson);
         model.addAttribute("title", lesson.getTitle() + " - " + course.getTitle());
         return "tutorials/watch-lesson";
+    }
+
+    // ========== LEARNING PATHS ==========
+
+    @GetMapping("/learning-paths")
+    public String learningPaths(Model model) {
+        try {
+            List<LearningPathDTO> paths = learningPathService.getAllPublicLearningPaths();
+            List<LearningPathDTO> featured = learningPathService.getFeaturedLearningPaths();
+            model.addAttribute("paths", paths);
+            model.addAttribute("featured", featured);
+        } catch (Exception e) {
+            model.addAttribute("paths", List.of());
+            model.addAttribute("featured", List.of());
+        }
+        model.addAttribute("title", "Learning Paths");
+        return "tutorials/learning-paths";
+    }
+
+    @GetMapping("/learning-paths/{id}")
+    public String viewLearningPath(@PathVariable Long id, Model model) {
+        try {
+            LearningPathDTO path = learningPathService.getLearningPathById(id);
+            model.addAttribute("path", path);
+            model.addAttribute("title", path.getName());
+        } catch (Exception e) {
+            return "redirect:/tutorials/learning-paths";
+        }
+        return "tutorials/learning-path-detail";
+    }
+
+    @GetMapping("/learning-paths/generate")
+    public String generateLearningPath(Model model) {
+        try {
+            List<TutorialCategoryDTO> categories = categoryService.getActiveCategories();
+            model.addAttribute("categories", categories);
+        } catch (Exception e) {
+            model.addAttribute("categories", List.of());
+        }
+        model.addAttribute("title", "Generate Learning Path");
+        return "tutorials/generate-learning-path";
+    }
+
+    @GetMapping("/my-learning-paths")
+    public String myLearningPaths(Model model) {
+        try {
+            List<UserLearningPathDTO> myPaths = learningPathService.getUserLearningPaths();
+            model.addAttribute("myPaths", myPaths);
+        } catch (Exception e) {
+            model.addAttribute("myPaths", List.of());
+        }
+        model.addAttribute("title", "My Learning Paths");
+        return "tutorials/my-learning-paths";
     }
 }
 

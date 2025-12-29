@@ -25,5 +25,8 @@ public class QuizAttemptDTO {
     private boolean isCompleted;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
+    private Integer timeLimitSeconds;
+    private Integer timeRemainingSeconds;
+    private Integer timeSpentSeconds;
     private List<QuizResponseDTO> responses;
 }
